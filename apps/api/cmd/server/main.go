@@ -1,0 +1,133 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/janmaciejewski/book-play/apps/api/internal/config"
+	"github.com/janmaciejewski/book-play/apps/api/internal/middleware"
+	"github.com/janmaciejewski/book-play/apps/api/internal/models"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/auth"
+)
+
+func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Initialize database
+	db, err := config.InitDatabase(&cfg.Database)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer config.CloseDatabase()
+
+	// Auto-migrate models
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.RefreshToken{},
+		&models.Facility{},
+		&models.FacilitySlot{},
+		&models.Reservation{},
+		&models.Team{},
+		&models.TeamMember{},
+	); err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
+	}
+
+	// Initialize Redis (optional in development)
+	_, err = config.InitRedis(&cfg.Redis)
+	if err != nil {
+		log.Printf("Warning: Failed to connect to Redis: %v", err)
+	}
+	defer config.CloseRedis()
+
+	// Initialize services
+	authService := auth.NewService(db)
+	authHandler := auth.NewHandler(authService)
+
+	// Setup Gin router
+	if cfg.App.Env == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.Default()
+
+	// Apply middleware
+	router.Use(middleware.CORS())
+	router.Use(middleware.Logger())
+
+	// Health check
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "ok",
+			"version": "1.0.0",
+		})
+	})
+
+	// API v1 routes
+	v1 := router.Group("/api/v1")
+	{
+		// Auth routes (public)
+		authGroup := v1.Group("/auth")
+		{
+			authGroup.POST("/register", authHandler.Register)
+			authGroup.POST("/login", authHandler.Login)
+			authGroup.POST("/refresh", authHandler.RefreshToken)
+			authGroup.POST("/logout", authHandler.Logout)
+		}
+
+		// Protected routes
+		protected := v1.Group("")
+		protected.Use(middleware.JWTAuth())
+		{
+			protected.GET("/auth/me", authHandler.GetMe)
+
+			// Facility routes (placeholder)
+			protected.GET("/facilities", func(c *gin.Context) {
+				c.JSON(200, gin.H{"data": []interface{}{}})
+			})
+			protected.GET("/facilities/:id", func(c *gin.Context) {
+				c.JSON(200, gin.H{"data": nil})
+			})
+			protected.POST("/facilities", func(c *gin.Context) {
+				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
+			})
+
+			// Reservation routes (placeholder)
+			protected.GET("/reservations", func(c *gin.Context) {
+				c.JSON(200, gin.H{"data": []interface{}{}})
+			})
+			protected.POST("/reservations", func(c *gin.Context) {
+				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
+			})
+
+			// Team routes (placeholder)
+			protected.GET("/teams", func(c *gin.Context) {
+				c.JSON(200, gin.H{"data": []interface{}{}})
+			})
+			protected.POST("/teams", func(c *gin.Context) {
+				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
+			})
+			protected.GET("/teams/:id", func(c *gin.Context) {
+				c.JSON(200, gin.H{"data": nil})
+			})
+		}
+	}
+
+	// Start server
+	port := cfg.App.Port
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("Server starting on port %s...\n", port)
+	if err := router.Run(":" + port); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to start server: %v\n", err)
+		os.Exit(1)
+	}
+}
