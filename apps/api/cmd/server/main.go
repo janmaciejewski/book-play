@@ -38,6 +38,12 @@ func main() {
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
+	log.Println("Database migration completed")
+
+	// Seed database with initial data
+	if err := config.SeedDatabase(db); err != nil {
+		log.Fatalf("Failed to seed database: %v", err)
+	}
 
 	// Initialize Redis (optional in development)
 	_, err = config.InitRedis(&cfg.Redis)
