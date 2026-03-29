@@ -1,0 +1,26 @@
+{
+  "name": "book-play",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sports Facility Reservation System with Team Management Module",
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:api": "cd apps/api && go run cmd/server/main.go",
+    "build": "npm run build -w apps/web",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
