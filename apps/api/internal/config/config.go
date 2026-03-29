@@ -70,9 +70,24 @@ var AppConfigInstance *Config
 func Load() (*Config, error) {
 	// Load .env file if exists (ignore error in production)
 	// Try multiple paths for .env file
-	_ = godotenv.Load()
-	_ = godotenv.Load("../../.env")    // When running from apps/api directory
-	_ = godotenv.Load("../../../.env") // When running from apps/api/cmd/server directory
+	envPaths := []string{
+		".env",          // When running from root with air
+		"../../.env",    // When running from apps/api directory
+		"../../../.env", // When running from apps/api/cmd/server directory
+		"apps/api/.env", // Alternative path
+	}
+
+	loaded := false
+	for _, path := range envPaths {
+		if err := godotenv.Load(path); err == nil {
+			fmt.Printf("Loaded environment from: %s\n", path)
+			loaded = true
+			break
+		}
+	}
+	if !loaded {
+		fmt.Println("Warning: No .env file found, using environment variables and defaults")
+	}
 
 	cfg := &Config{
 		App: AppConfig{

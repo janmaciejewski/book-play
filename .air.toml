@@ -7,11 +7,12 @@ tmp_dir = "apps/api/tmp"
 
 [build]
 # Command to build your app (Windows requires .exe)
-cmd = "cd apps/api && go build -o ./tmp/server.exe ./cmd/server"
+# Use -C flag to change directory (cross-platform compatible)
+cmd = "go build -C apps/api -o ./tmp/server.exe ./cmd/server"
 # Binary file name
-bin = "./apps/api/tmp/server.exe"
+bin = "apps/api/tmp/server.exe"
 # Customize binary run command
-full_bin = "./apps/api/tmp/server.exe"
+full_bin = "apps/api/tmp/server.exe"
 # Watch these filename extensions
 include_ext = ["go", "tpl", "tmpl", "html", "env"]
 # Watch these directories
