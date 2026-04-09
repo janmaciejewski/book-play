@@ -67,19 +67,24 @@ export const useAuthStore = defineStore('auth', {
       const config = useRuntimeConfig()
       
       try {
-        const response = await $fetch<{ user_id: string }>(`${config.public.apiBase}/auth/me`, {
+        const response = await $fetch<{ 
+          id: string
+          email: string
+          first_name: string
+          last_name: string
+          role: string 
+        }>(`${config.public.apiBase}/auth/me`, {
           headers: {
             Authorization: `Bearer ${this.token}`,
           },
         })
         
-        // For now, we just have user_id - in real app you'd fetch full profile
         this.user = {
-          id: response.user_id,
-          email: '',
-          first_name: '',
-          last_name: '',
-          role: 'player',
+          id: response.id,
+          email: response.email,
+          first_name: response.first_name,
+          last_name: response.last_name,
+          role: response.role,
         }
       } catch (error) {
         this.logout()

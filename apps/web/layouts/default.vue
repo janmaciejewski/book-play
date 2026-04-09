@@ -16,6 +16,7 @@
                 Obiekty
               </NuxtLink>
               <NuxtLink
+                v-if="authStore.isAuthenticated"
                 to="/reservations"
                 class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
                 active-class="border-b-2 border-primary-500 text-gray-900"
@@ -23,11 +24,20 @@
                 Moje rezerwacje
               </NuxtLink>
               <NuxtLink
+                v-if="authStore.isAuthenticated"
                 to="/teams"
                 class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
                 active-class="border-b-2 border-primary-500 text-gray-900"
               >
                 Drużyny
+              </NuxtLink>
+              <NuxtLink
+                v-if="authStore.user?.role === 'ADMIN'"
+                to="/users"
+                class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
+                active-class="border-b-2 border-primary-500 text-gray-900"
+              >
+                Użytkownicy
               </NuxtLink>
             </div>
           </div>

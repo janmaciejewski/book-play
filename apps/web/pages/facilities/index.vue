@@ -29,7 +29,6 @@
             <option value="TENNIS">Tenis</option>
             <option value="VOLLEYBALL">Siatkówka</option>
             <option value="SWIMMING">Pływanie</option>
-            <option value="GYM">Siłownia</option>
             <option value="OTHER">Inne</option>
           </select>
         </div>
@@ -81,7 +80,7 @@
             <span class="text-xs font-medium text-indigo-600 bg-indigo-100 px-2 py-1 rounded">
               {{ facility.type }}
             </span>
-            <span class="text-lg font-bold text-gray-900">${{ facility.hourlyRate }}/h</span>
+            <span class="text-lg font-bold text-gray-900">{{ facility.hourlyRate }} PLN/h</span>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ facility.name }}</h3>
           <p class="text-sm text-gray-600 mb-2">{{ facility.address }}, {{ facility.city }}</p>
@@ -104,9 +103,7 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  middleware: 'auth'
-})
+// No auth required for viewing facilities
 
 const search = ref('')
 const typeFilter = ref('')
@@ -128,11 +125,16 @@ interface FacilitiesResponse {
   data: Facility[]
 }
 
-const { data: response, pending, error } = await useFetch<FacilitiesResponse>('http://localhost:8080/api/v1/facilities', {
-  headers: {
-    Authorization: `Bearer ${useCookie('token').value || ''}`
-  }
+// Build URL with query parameters
+const apiUrl = computed(() => {
+  const params = new URLSearchParams()
+  if (typeFilter.value) params.append('type', typeFilter.value)
+  if (cityFilter.value) params.append('city', cityFilter.value)
+  const queryString = params.toString()
+  return `http://localhost:8080/api/v1/facilities${queryString ? '?' + queryString : ''}`
 })
+
+const { data: response, pending, error, refresh } = await useFetch<FacilitiesResponse>(apiUrl)
 
 const facilities = computed(() => response.value?.data || [])
 
@@ -143,16 +145,19 @@ const getTypeIcon = (type: string): string => {
     TENNIS: '🎾',
     VOLLEYBALL: '🏐',
     SWIMMING: '🏊',
-    GYM: '🏋️',
     OTHER: '🏟️'
   }
   return icons[type] || '🏟️'
 }
 
 const searchFacilities = () => {
-  // Implement search functionality
-  console.log('Searching...', { search: search.value, type: typeFilter.value, city: cityFilter.value })
+  refresh()
 }
+
+// Watch for filter changes
+watch([typeFilter, cityFilter], () => {
+  refresh()
+})
 
 const viewFacility = (id: string) => {
   navigateTo(`/facilities/${id}`)

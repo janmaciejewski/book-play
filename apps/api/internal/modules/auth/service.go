@@ -116,6 +116,15 @@ func (s *Service) Logout(tokenString string) error {
 	return s.db.Where("token = ?", tokenString).Delete(&models.RefreshToken{}).Error
 }
 
+// GetUserByID retrieves a user by their ID
+func (s *Service) GetUserByID(userID uuid.UUID) (*models.User, error) {
+	var user models.User
+	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // generateTokens creates access and refresh tokens
 func (s *Service) generateTokens(user *models.User) (*AuthResponse, error) {
 	cfg := config.AppConfigInstance.JWT

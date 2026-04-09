@@ -2,6 +2,7 @@ package config
 
 import (
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
@@ -71,71 +72,97 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created %d users", len(users))
 
-	// Create facilities
+	// Create facilities - all near Grodzisk Wielkopolski (52.22762, 16.36534)
 	facilities := []models.Facility{
 		{
 			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000001"),
-			Name:        "Central Football Stadium",
-			Description: strPtr("Professional football field with artificial turf"),
-			Type:        "football",
-			Address:     "ul. Sportowa 1",
-			City:        "Warsaw",
-			Lat:         floatPtr(52.2297),
-			Lng:         floatPtr(21.0122),
-			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-			HourlyRate:  decimal.NewFromFloat(150.00),
-			IsActive:    true,
-		},
-		{
-			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000002"),
-			Name:        "City Basketball Arena",
-			Description: strPtr("Indoor basketball court with professional equipment"),
-			Type:        "basketball",
-			Address:     "ul. Koszykowa 2",
-			City:        "Warsaw",
-			Lat:         floatPtr(52.2185),
-			Lng:         floatPtr(21.0138),
-			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-			HourlyRate:  decimal.NewFromFloat(100.00),
-			IsActive:    true,
-		},
-		{
-			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000003"),
-			Name:        "Riverside Tennis Club",
-			Description: strPtr("Outdoor tennis courts with lighting"),
-			Type:        "tennis",
-			Address:     "ul. Tenisowa 5",
-			City:        "Warsaw",
-			Lat:         floatPtr(52.2350),
-			Lng:         floatPtr(21.0250),
+			Name:        "Stadion Miejski Grodzisk Wielkopolski",
+			Description: strPtr("Pełnowymiarowe boisko piłkarskie z sztuczną trawą i oświetleniem"),
+			Type:        "FOOTBALL",
+			Address:     "ul. Sportowa 5",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22850),
+			Lng:         floatPtr(16.36620),
 			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
 			HourlyRate:  decimal.NewFromFloat(80.00),
 			IsActive:    true,
 		},
 		{
-			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000004"),
-			Name:        "Beach Volleyball Courts",
-			Description: strPtr("Sandy beach volleyball courts near the river"),
-			Type:        "volleyball",
-			Address:     "ul. Plażowa 10",
-			City:        "Warsaw",
-			Lat:         floatPtr(52.2400),
-			Lng:         floatPtr(21.0300),
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000002"),
+			Name:        "Hala Sportowa OSiR",
+			Description: strPtr("Nowoczesna hala sportowa z boiskiem do koszykówki i siatkówki"),
+			Type:        "BASKETBALL",
+			Address:     "ul. Oświatowa 8",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22680),
+			Lng:         floatPtr(16.36890),
 			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
 			HourlyRate:  decimal.NewFromFloat(60.00),
 			IsActive:    true,
 		},
 		{
-			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000005"),
-			Name:        "Indoor Swimming Pool",
-			Description: strPtr("Olympic-size swimming pool with lanes"),
-			Type:        "swimming",
-			Address:     "ul. Pływacka 8",
-			City:        "Krakow",
-			Lat:         floatPtr(50.0647),
-			Lng:         floatPtr(19.9450),
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000003"),
+			Name:        "Korty Tenisowe KS Grodzisk",
+			Description: strPtr("Dwa korty tenisowe z nawierzchnią ceglaną, dostępne cały rok"),
+			Type:        "TENNIS",
+			Address:     "ul. Tenisowa 3",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22910),
+			Lng:         floatPtr(16.36250),
 			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-			HourlyRate:  decimal.NewFromFloat(45.00),
+			HourlyRate:  decimal.NewFromFloat(40.00),
+			IsActive:    true,
+		},
+		{
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000004"),
+			Name:        "Basen Kompleks Sportowy",
+			Description: strPtr("Basen rekreacyjny 25m z torami pływackimi i brodzikiem dla dzieci"),
+			Type:        "SWIMMING",
+			Address:     "ul. Pływania 12",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22700),
+			Lng:         floatPtr(16.37000),
+			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			HourlyRate:  decimal.NewFromFloat(25.00),
+			IsActive:    true,
+		},
+		{
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000005"),
+			Name:        "Boisko do Siatkówki Plażowej",
+			Description: strPtr("Profesjonalne boisko do siatkówki plażowej przy parku miejskim"),
+			Type:        "VOLLEYBALL",
+			Address:     "ul. Parkowa 2",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22650),
+			Lng:         floatPtr(16.36380),
+			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			HourlyRate:  decimal.NewFromFloat(30.00),
+			IsActive:    true,
+		},
+		{
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000007"),
+			Name:        "Boisko Orlik",
+			Description: strPtr("Boisko wielofunkcyjne do piłki nożnej, koszykówki i siatkówki"),
+			Type:        "FOOTBALL",
+			Address:     "ul. Szkolna 10",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.23000),
+			Lng:         floatPtr(16.36400),
+			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			HourlyRate:  decimal.NewFromFloat(40.00),
+			IsActive:    true,
+		},
+		{
+			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000008"),
+			Name:        "Korty Padel Club",
+			Description: strPtr("Dwa kryte korty padel z profesjonalnym oświetleniem"),
+			Type:        "PADEL",
+			Address:     "ul. Racketowa 7",
+			City:        "Grodzisk Wielkopolski",
+			Lat:         floatPtr(52.22450),
+			Lng:         floatPtr(16.36720),
+			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
+			HourlyRate:  decimal.NewFromFloat(70.00),
 			IsActive:    true,
 		},
 	}
@@ -219,6 +246,145 @@ func SeedDatabase(db *gorm.DB) error {
 		}
 	}
 	log.Printf("Created %d team members", len(teamMembers))
+
+	// Create reservations
+	today := time.Now()
+	tomorrow := today.AddDate(0, 0, 1)
+	nextWeek := today.AddDate(0, 0, 7)
+	nextWeekPlus1 := today.AddDate(0, 0, 8)
+	inTwoWeeks := today.AddDate(0, 0, 14)
+
+	teamID1 := uuid.MustParse("20000000-0000-0000-0000-000000000001")
+	teamID2 := uuid.MustParse("20000000-0000-0000-0000-000000000002")
+
+	reservations := []models.Reservation{
+		// Today's reservations - all owned by captain
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000001"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			TeamID:     &teamID1,
+			Date:       today,
+			StartTime:  "10:00",
+			EndTime:    "12:00",
+			Status:     models.StatusConfirmed,
+			TotalPrice: decimal.NewFromFloat(60.00),
+			Notes:      strPtr("Cotygodniowy trening drużyny"),
+		},
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000002"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000002"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       today,
+			StartTime:  "14:00",
+			EndTime:    "16:00",
+			Status:     models.StatusConfirmed,
+			TotalPrice: decimal.NewFromFloat(80.00),
+			Notes:      strPtr("Mecz koszykówki ze znajomymi"),
+		},
+		// Tomorrow's reservations
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000003"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000003"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       tomorrow,
+			StartTime:  "09:00",
+			EndTime:    "10:00",
+			Status:     models.StatusPending,
+			TotalPrice: decimal.NewFromFloat(50.00),
+			Notes:      strPtr("Lekcja tenisa"),
+		},
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000004"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000004"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			TeamID:     &teamID2,
+			Date:       tomorrow,
+			StartTime:  "16:00",
+			EndTime:    "18:00",
+			Status:     models.StatusConfirmed,
+			TotalPrice: decimal.NewFromFloat(80.00),
+			Notes:      strPtr("Turniej siatkówki plażowej"),
+		},
+		// Next week reservations
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000005"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			TeamID:     &teamID1,
+			Date:       nextWeek,
+			StartTime:  "18:00",
+			EndTime:    "20:00",
+			Status:     models.StatusConfirmed,
+			TotalPrice: decimal.NewFromFloat(60.00),
+			Notes:      strPtr("Wieczorny mecz piłki nożnej"),
+		},
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000006"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000005"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       nextWeekPlus1,
+			StartTime:  "07:00",
+			EndTime:    "08:00",
+			Status:     models.StatusPending,
+			TotalPrice: decimal.NewFromFloat(50.00),
+			Notes:      strPtr("Poranny trening pływacki"),
+		},
+		// Completed reservation from past
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000007"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000002"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       today.AddDate(0, 0, -3),
+			StartTime:  "15:00",
+			EndTime:    "17:00",
+			Status:     models.StatusCompleted,
+			TotalPrice: decimal.NewFromFloat(80.00),
+			Notes:      strPtr("Mecz koszykówki w zeszłym tygodniu"),
+		},
+		// Cancelled reservation
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000008"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000003"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       inTwoWeeks,
+			StartTime:  "10:00",
+			EndTime:    "11:00",
+			Status:     models.StatusCancelled,
+			TotalPrice: decimal.NewFromFloat(50.00),
+			Notes:      strPtr("Odwołane z powodu pogody"),
+		},
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000009"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			TeamID:     &teamID1,
+			Date:       nextWeek,
+			StartTime:  "10:00",
+			EndTime:    "12:00",
+			Status:     models.StatusPending,
+			TotalPrice: decimal.NewFromFloat(60.00),
+			Notes:      strPtr("Sesja treningowa drużyny"),
+		},
+		{
+			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000010"),
+			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000004"),
+			UserID:     uuid.MustParse("00000000-0000-0000-0000-000000000004"),
+			Date:       inTwoWeeks,
+			StartTime:  "14:00",
+			EndTime:    "16:00",
+			Status:     models.StatusConfirmed,
+			TotalPrice: decimal.NewFromFloat(80.00),
+			Notes:      strPtr("Weekendowa siatkówka plażowa"),
+		},
+	}
+
+	for _, reservation := range reservations {
+		if err := db.Create(&reservation).Error; err != nil {
+			return err
+		}
+	}
+	log.Printf("Created %d reservations", len(reservations))
 
 	log.Println("✅ Database seeding completed successfully!")
 	log.Println("")

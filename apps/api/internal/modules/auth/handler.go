@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/janmaciejewski/book-play/apps/api/internal/config"
 )
 
@@ -164,11 +165,29 @@ func (h *Handler) Logout(c *gin.Context) {
 // @Failure 401 {object} map[string]string
 // @Router /auth/me [get]
 func (h *Handler) GetMe(c *gin.Context) {
-	userID, exists := c.Get("userID")
+	userIDStr, exists := c.Get("userID")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"user_id": userID})
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"email":      user.Email,
+		"first_name": user.FirstName,
+		"last_name":  user.LastName,
+		"role":       user.Role,
+	})
 }

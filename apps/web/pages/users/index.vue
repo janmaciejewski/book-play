@@ -1,0 +1,146 @@
+<template>
+  <div>
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Użytkownicy</h1>
+      <p class="mt-2 text-gray-600">Zarządzaj użytkownikami systemu</p>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white rounded-lg shadow">
+      <div v-if="pending" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+
+      <div v-else-if="error" class="p-4 text-red-700">
+        Nie udało się załadować użytkowników.
+      </div>
+
+      <table v-else class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Użytkownik</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rola</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Akcje</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="user in users" :key="user.id">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <span class="text-indigo-600 font-medium">
+                    {{ user.first_name?.[0] }}{{ user.last_name?.[0] }}
+                  </span>
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-gray-900">{{ user.first_name }} {{ user.last_name }}</div>
+                  <div v-if="user.phone" class="text-sm text-gray-500">{{ user.phone }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.email }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <select
+                v-model="user.role"
+                @change="updateRole(user.id, user.role)"
+                class="text-sm rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
+                <option value="ADMIN">Administrator</option>
+                <option value="FACILITY_OWNER">Właściciel obiektu</option>
+                <option value="PLAYER">Gracz</option>
+              </select>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span
+                :class="[
+                  'px-2 py-1 text-xs font-medium rounded',
+                  user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                ]"
+              >
+                {{ user.is_active ? 'Aktywny' : 'Nieaktywny' }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              <button
+                @click="deleteUser(user.id)"
+                class="text-red-600 hover:text-red-900"
+                :disabled="user.id === authStore.user?.id"
+                :class="{ 'opacity-50 cursor-not-allowed': user.id === authStore.user?.id }"
+              >
+                Usuń
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+definePageMeta({
+  middleware: 'auth'
+})
+
+const authStore = useAuthStore()
+
+// Check if user is admin
+if (authStore.user?.role !== 'ADMIN') {
+  navigateTo('/')
+}
+
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  phone?: string
+  role: string
+  is_active: boolean
+}
+
+interface UsersResponse {
+  data: User[]
+}
+
+const { data: response, pending, error, refresh } = await useFetch<UsersResponse>('http://localhost:8080/api/v1/users', {
+  headers: {
+    Authorization: `Bearer ${useCookie('token').value || ''}`
+  }
+})
+
+const users = computed(() => response.value?.data || [])
+
+const updateRole = async (userId: string, newRole: string) => {
+  try {
+    await $fetch(`http://localhost:8080/api/v1/users/${userId}/role`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${useCookie('token').value || ''}`
+      },
+      body: { role: newRole }
+    })
+  } catch (err) {
+    console.error('Failed to update role:', err)
+    refresh()
+  }
+}
+
+const deleteUser = async (userId: string) => {
+  if (!confirm('Czy na pewno chcesz usunąć tego użytkownika?')) return
+  
+  try {
+    await $fetch(`http://localhost:8080/api/v1/users/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${useCookie('token').value || ''}`
+      }
+    })
+    refresh()
+  } catch (err) {
+    console.error('Failed to delete user:', err)
+  }
+}
+</script>

@@ -61,15 +61,21 @@
           </div>
           <div>
             <p class="text-gray-500">Cena całkowita</p>
-            <p class="font-medium">${{ reservation.totalPrice }}</p>
+            <p class="font-medium">{{ reservation.totalPrice }} PLN</p>
           </div>
           <div>
             <p class="text-gray-500">Drużyna</p>
             <p class="font-medium">{{ reservation.team?.name || 'Indywidualnie' }}</p>
           </div>
         </div>
-        <div v-if="reservation.status === 'PENDING'" class="mt-4 flex gap-2">
-          <button class="text-red-600 hover:text-red-700 text-sm font-medium">Anuluj rezerwację</button>
+        <div v-if="reservation.status === 'PENDING' || reservation.status === 'CONFIRMED'" class="mt-4 flex gap-2">
+          <button 
+            @click="cancelReservation(reservation.id)"
+            :disabled="cancellingId === reservation.id"
+            class="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50"
+          >
+            {{ cancellingId === reservation.id ? 'Anulowanie...' : 'Anuluj rezerwację' }}
+          </button>
         </div>
       </div>
     </div>
@@ -113,6 +119,32 @@ const { data: response, pending, error } = await useFetch<ReservationsResponse>(
 })
 
 const reservations = computed(() => response.value?.data || [])
+
+const cancellingId = ref<string | null>(null)
+
+const cancelReservation = async (id: string) => {
+  if (!confirm('Czy na pewno chcesz anulować tę rezerwację?')) return
+  
+  cancellingId.value = id
+  try {
+    await $fetch(`http://localhost:8080/api/v1/reservations/${id}/cancel`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${useCookie('token').value || ''}`
+      }
+    })
+    // Update local state
+    const index = reservations.value.findIndex(r => r.id === id)
+    if (index !== -1) {
+      reservations.value[index].status = 'CANCELLED'
+    }
+  } catch (err) {
+    console.error('Failed to cancel reservation:', err)
+    alert('Nie udało się anulować rezerwacji')
+  } finally {
+    cancellingId.value = null
+  }
+}
 
 const formatDate = (date: string): string => {
   return new Date(date).toLocaleDateString('pl-PL', {

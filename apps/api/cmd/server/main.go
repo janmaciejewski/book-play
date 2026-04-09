@@ -10,6 +10,10 @@ import (
 	"github.com/janmaciejewski/book-play/apps/api/internal/middleware"
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/auth"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/facility"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/reservation"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/team"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/user"
 )
 
 func main() {
@@ -56,6 +60,18 @@ func main() {
 	authService := auth.NewService(db)
 	authHandler := auth.NewHandler(authService)
 
+	facilityService := facility.NewService(db)
+	facilityHandler := facility.NewHandler(facilityService)
+
+	teamService := team.NewService(db)
+	teamHandler := team.NewHandler(teamService)
+
+	reservationService := reservation.NewService(db)
+	reservationHandler := reservation.NewHandler(reservationService)
+
+	userService := user.NewService(db)
+	userHandler := user.NewHandler(userService)
+
 	// Setup Gin router
 	if cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -66,6 +82,19 @@ func main() {
 	// Apply middleware
 	router.Use(middleware.CORS())
 	router.Use(middleware.Logger())
+
+	// Root route - API info
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"name":    "Book-Play API",
+			"version": "1.0.0",
+			"status":  "running",
+			"endpoints": gin.H{
+				"health": "/health",
+				"api":    "/api/v1",
+			},
+		})
+	})
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -87,41 +116,35 @@ func main() {
 			authGroup.POST("/logout", authHandler.Logout)
 		}
 
+		// Public facility routes
+		v1.GET("/facilities", facilityHandler.GetAll)
+		v1.GET("/facilities/:id", facilityHandler.GetByID)
+		v1.GET("/facilities/:id/availability", facilityHandler.GetAvailability)
+
 		// Protected routes
 		protected := v1.Group("")
 		protected.Use(middleware.JWTAuth())
 		{
 			protected.GET("/auth/me", authHandler.GetMe)
 
-			// Facility routes (placeholder)
-			protected.GET("/facilities", func(c *gin.Context) {
-				c.JSON(200, gin.H{"data": []interface{}{}})
-			})
-			protected.GET("/facilities/:id", func(c *gin.Context) {
-				c.JSON(200, gin.H{"data": nil})
-			})
-			protected.POST("/facilities", func(c *gin.Context) {
-				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
-			})
+			// Facility routes (protected - create only)
+			protected.POST("/facilities", facilityHandler.Create)
 
-			// Reservation routes (placeholder)
-			protected.GET("/reservations", func(c *gin.Context) {
-				c.JSON(200, gin.H{"data": []interface{}{}})
-			})
-			protected.POST("/reservations", func(c *gin.Context) {
-				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
-			})
+			// Reservation routes
+			protected.GET("/reservations", reservationHandler.GetAll)
+			protected.GET("/reservations/:id", reservationHandler.GetByID)
+			protected.POST("/reservations", reservationHandler.Create)
+			protected.PUT("/reservations/:id/cancel", reservationHandler.Cancel)
 
-			// Team routes (placeholder)
-			protected.GET("/teams", func(c *gin.Context) {
-				c.JSON(200, gin.H{"data": []interface{}{}})
-			})
-			protected.POST("/teams", func(c *gin.Context) {
-				c.JSON(201, gin.H{"data": gin.H{"id": "1"}})
-			})
-			protected.GET("/teams/:id", func(c *gin.Context) {
-				c.JSON(200, gin.H{"data": nil})
-			})
+			// Team routes
+			protected.GET("/teams", teamHandler.GetAll)
+			protected.GET("/teams/:id", teamHandler.GetByID)
+			protected.POST("/teams", teamHandler.Create)
+
+			// User routes (admin only)
+			protected.GET("/users", userHandler.GetAll)
+			protected.PUT("/users/:id/role", userHandler.UpdateRole)
+			protected.DELETE("/users/:id", userHandler.Delete)
 		}
 	}
 
