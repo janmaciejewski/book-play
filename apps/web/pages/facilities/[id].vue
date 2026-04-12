@@ -1,12 +1,12 @@
 <template>
-  <div>
+  <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
     <!-- Loading -->
     <div v-if="pending" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
     </div>
 
     <!-- Error -->
-    <div v-else-if="error" class="bg-red-50 text-red-700 p-4 rounded-lg">
+    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800">
       Nie udało się załadować obiektu.
       <NuxtLink to="/facilities" class="underline">Wróć do listy</NuxtLink>
     </div>
@@ -15,12 +15,12 @@
     <div v-else-if="facility">
       <!-- Header -->
       <div class="mb-8">
-        <NuxtLink to="/facilities" class="text-indigo-600 hover:text-indigo-700 text-sm">
+        <NuxtLink to="/facilities" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">
           &larr; Wróć do obiektów
         </NuxtLink>
-        <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ facility.name }}</h1>
-        <p class="text-gray-600 mt-1">{{ facility.address }}, {{ facility.city }}</p>
-        <span class="inline-block mt-2 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ facility.name }}</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-1">{{ facility.address }}, {{ facility.city }}</p>
+        <span class="inline-block mt-2 px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full text-sm border border-primary-200 dark:border-primary-700/50">
           {{ getTypeLabel(facility.type) }}
         </span>
       </div>
@@ -28,45 +28,45 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Facility Info -->
         <div class="lg:col-span-2 space-y-6">
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold mb-4">Informacje</h2>
-            <p v-if="facility.description" class="text-gray-600">{{ facility.description }}</p>
-            <p v-else class="text-gray-400 italic">Brak opisu</p>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Informacje</h2>
+            <p v-if="facility.description" class="text-gray-600 dark:text-gray-400">{{ facility.description }}</p>
+            <p v-else class="text-gray-400 dark:text-gray-500 italic">Brak opisu</p>
             
             <div class="mt-4 grid grid-cols-2 gap-4">
               <div>
-                <p class="text-sm text-gray-500">Cena za godzinę</p>
-                <p class="text-xl font-semibold text-indigo-600">{{ facility.hourlyRate }} PLN</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Cena za godzinę</p>
+                <p class="text-xl font-semibold text-primary-600 dark:text-primary-400">{{ facility.hourlyRate }} PLN</p>
               </div>
               <div>
-                <p class="text-sm text-gray-500">Godziny otwarcia</p>
-                <p class="text-lg">08:00 - 22:00</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Godziny otwarcia</p>
+                <p class="text-lg text-gray-900 dark:text-white">08:00 - 22:00</p>
               </div>
             </div>
           </div>
 
           <!-- Calendar -->
-          <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-lg font-semibold mb-4">Wybierz termin</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Wybierz termin</h2>
             
             <!-- Date Selection -->
             <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Data</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data</label>
               <input
                 type="date"
                 v-model="selectedDate"
                 :min="minDate"
-                class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
               />
             </div>
 
             <!-- Time Slots -->
             <div v-if="selectedDate">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Dostępne godziny</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dostępne godziny</label>
               <div v-if="availabilityPending" class="flex justify-center py-4">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
               </div>
-              <div v-else-if="availableSlots.length === 0" class="text-gray-500 py-4">
+              <div v-else-if="availableSlots.length === 0" class="text-gray-500 dark:text-gray-400 py-4">
                 Brak dostępnych terminów na ten dzień
               </div>
               <div v-else class="grid grid-cols-4 sm:grid-cols-6 gap-2">
@@ -77,8 +77,8 @@
                   :class="[
                     'px-3 py-2 rounded-md text-sm font-medium transition-colors',
                     selectedSlot === slot
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   ]"
                 >
                   {{ slot }}
@@ -90,33 +90,33 @@
 
         <!-- Booking Summary -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow p-6 sticky top-4">
-            <h2 class="text-lg font-semibold mb-4">Twoja rezerwacja</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-4 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Twoja rezerwacja</h2>
             
-            <div v-if="!selectedDate || !selectedSlot" class="text-gray-500 text-center py-8">
+            <div v-if="!selectedDate || !selectedSlot" class="text-gray-500 dark:text-gray-400 text-center py-8">
               Wybierz datę i godzinę
             </div>
             
             <div v-else class="space-y-4">
-              <div class="flex justify-between">
-                <span class="text-gray-500">Obiekt</span>
-                <span class="font-medium">{{ facility.name }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500">Data</span>
-                <span class="font-medium">{{ formatDate(selectedDate) }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-gray-500">Godzina</span>
-                <span class="font-medium">{{ selectedSlot }}</span>
+                <div class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">Obiekt</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ facility.name }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">Data</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ formatDate(selectedDate) }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">Godzina</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ selectedSlot }}</span>
               </div>
               
               <!-- Duration Selection -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Czas trwania</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Czas trwania</label>
                 <select
                   v-model="duration"
-                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 >
                   <option value="1">1 godzina</option>
                   <option value="2">2 godziny</option>
@@ -126,10 +126,10 @@
 
               <!-- Team Selection (optional) -->
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Drużyna (opcjonalnie)</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Drużyna (opcjonalnie)</label>
                 <select
                   v-model="selectedTeam"
-                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 >
                   <option value="">Indywidualnie</option>
                   <option v-for="team in teams" :key="team.id" :value="team.id">
@@ -140,22 +140,22 @@
 
               <hr />
 
-              <div class="flex justify-between text-lg font-semibold">
+              <div class="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
                 <span>Do zapłaty</span>
-                <span class="text-indigo-600">{{ totalPrice }} PLN</span>
+                <span class="text-primary-600 dark:text-primary-400">{{ totalPrice }} PLN</span>
               </div>
 
               <button
                 @click="bookReservation"
                 :disabled="booking"
-                class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50"
+                class="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50"
               >
                 <span v-if="booking">Rezerwowanie...</span>
                 <span v-else>Zarezerwuj</span>
               </button>
             </div>
 
-            <div v-if="bookingError" class="mt-4 text-red-600 text-sm">
+            <div v-if="bookingError" class="mt-4 text-red-600 dark:text-red-400 text-sm">
               {{ bookingError }}
             </div>
           </div>
