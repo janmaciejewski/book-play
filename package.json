@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "air",
+    "dev:web": "npm run dev -w apps/web",
     "start": "powershell -ExecutionPolicy Bypass -File ./start.ps1",
     "build": "npm run build -w apps/web",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
