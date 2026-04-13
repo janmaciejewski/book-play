@@ -1,32 +1,49 @@
 <template>
   <div>
     <!-- Hero Section -->
-    <section class="bg-white dark:bg-gray-900">
-      <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <section class="relative overflow-hidden h-[600px] flex items-center justify-center">
+      <!-- Background Slideshow -->
+      <div 
+        v-for="(image, index) in heroImages" 
+        :key="index"
+        class="absolute inset-0 transition-opacity duration-1000 ease-in-out"
+        :class="{
+          'opacity-100': currentSlide === index,
+          'opacity-0': currentSlide !== index
+        }"
+      >
+        <img 
+          :src="image" 
+          alt="Sport background"
+          class="w-full h-full object-cover object-center"
+        />
+      </div>
+
+      <!-- Dark Overlay for text readability -->
+      <div class="absolute inset-0 bg-black/60 z-10"></div>
+
+      <!-- Hero Content -->
+      <div class="relative z-20 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div class="text-center">
-          <h1 class="text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-5xl md:text-6xl">
-            Zarezerwuj swój <span class="text-primary-600 dark:text-primary-400">mecz</span>
+          <h1 class="text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl">
+            Zarezerwuj swój <span class="text-primary-400">mecz</span>
           </h1>
-          <p class="mx-auto mt-3 max-w-md text-base text-gray-500 dark:text-gray-400 sm:text-lg md:mt-5 md:max-w-3xl md:text-xl">
+          <p class="mx-auto mt-3 max-w-md text-base text-gray-200 sm:text-lg md:mt-5 md:max-w-3xl md:text-xl">
             Rezerwuj obiekty sportowe, zarządzaj drużynami i śledź swoje mecze z łatwością.
           </p>
-          <div class="mx-auto mt-5 max-w-md sm:flex sm:justify-center md:mt-8">
-            <div class="rounded-md shadow">
-              <NuxtLink
-                to="/facilities"
-                class="flex w-full items-center justify-center rounded-md border border-transparent bg-primary-600 px-8 py-3 text-base font-medium text-white hover:bg-primary-700 md:py-4 md:px-10 md:text-lg"
-              >
-                Przeglądaj obiekty
-              </NuxtLink>
-            </div>
-            <div class="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
-              <NuxtLink
-                to="/register"
-                class="flex w-full items-center justify-center rounded-md border border-transparent bg-white dark:bg-gray-800 px-8 py-3 text-base font-medium text-primary-600 dark:text-primary-400 hover:bg-gray-50 dark:hover:bg-gray-700 md:py-4 md:px-10 md:text-lg"
-              >
-                Rozpocznij
-              </NuxtLink>
-            </div>
+          <div class="mx-auto mt-5 max-w-md sm:flex sm:justify-center md:mt-8 gap-3">
+            <NuxtLink
+              to="/facilities"
+              class="rounded-md shadow bg-primary-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-primary-700 transition-colors whitespace-nowrap"
+            >
+              Przeglądaj obiekty
+            </NuxtLink>
+            <NuxtLink
+              :to="authStore.isAuthenticated ? '/reservations' : '/register'"
+              class="rounded-md shadow bg-white/10 backdrop-blur-sm text-white px-6 py-2.5 text-sm font-medium hover:bg-white/20 transition-colors whitespace-nowrap"
+            >
+              {{ authStore.isAuthenticated ? 'Sprawdź swoje rezerwacje' : 'Rozpocznij' }}
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -60,7 +77,7 @@
           <div class="rounded-lg bg-white dark:bg-gray-700 p-6 shadow border border-gray-200 dark:border-gray-600">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-primary-500 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3-a2 0 11-4 0 2 0 014 0zM7 10a2 0 11-4 0 2 0 014 0z" />
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Zarządzanie drużyną</h3>
@@ -73,7 +90,7 @@
           <div class="rounded-lg bg-white dark:bg-gray-700 p-6 shadow border border-gray-200 dark:border-gray-600">
             <div class="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-primary-500 text-white">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 0 00-2-2H5a2 0 00-2 2v6a2 0 002 2h2a2 0 002-2zm0 0V9a2 0 012-2h2a2 0 012 2v10m-6 0a2 0 002 2h2a2 0 002-2m0 0V5a2 0 012-2h2a2 0 012 2v14a2 0 01-2 2h-2a2 0 01-2-2z" />
               </svg>
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Śledzenie aktywności</h3>
@@ -90,5 +107,23 @@
 <script setup lang="ts">
 definePageMeta({
   layout: 'default',
+})
+
+const authStore = useAuthStore()
+
+const heroImages = [
+  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1546519638-68e109498ffc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80',
+  'https://images.unsplash.com/photo-1517649763962-0c623066013b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'
+]
+
+const currentSlide = ref(0)
+
+onMounted(() => {
+  setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % heroImages.length
+  }, 3000)
 })
 </script>

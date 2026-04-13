@@ -152,19 +152,6 @@ func SeedDatabase(db *gorm.DB) error {
 			HourlyRate:  decimal.NewFromFloat(40.00),
 			IsActive:    true,
 		},
-		{
-			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000008"),
-			Name:        "Korty Padel Club",
-			Description: strPtr("Dwa kryte korty padel z profesjonalnym oświetleniem"),
-			Type:        "PADEL",
-			Address:     "ul. Racketowa 7",
-			City:        "Grodzisk Wielkopolski",
-			Lat:         floatPtr(52.22450),
-			Lng:         floatPtr(16.36720),
-			OwnerID:     uuid.MustParse("00000000-0000-0000-0000-000000000002"),
-			HourlyRate:  decimal.NewFromFloat(70.00),
-			IsActive:    true,
-		},
 	}
 
 	for _, facility := range facilities {

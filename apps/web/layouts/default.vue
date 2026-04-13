@@ -65,8 +65,14 @@
             </template>
             <template v-else>
               <NuxtLink
+                to="/register"
+                class="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              >
+                Zarejestruj
+              </NuxtLink>
+              <NuxtLink
                 to="/login"
-                class="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                class="rounded-md bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
               >
                 Zaloguj
               </NuxtLink>

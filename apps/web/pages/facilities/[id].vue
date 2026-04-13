@@ -20,7 +20,7 @@
         </NuxtLink>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ facility.name }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mt-1">{{ facility.address }}, {{ facility.city }}</p>
-        <span class="inline-block mt-2 px-3 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 rounded-full text-sm border border-primary-200 dark:border-primary-700/50">
+        <span :class="getTypeBadgeClasses(facility.type)" class="inline-block mt-2 px-3 py-1 rounded-full text-sm border">
           {{ getTypeLabel(facility.type) }}
         </span>
       </div>
@@ -278,10 +278,22 @@ const getTypeLabel = (type: string): string => {
     'BASKETBALL': 'Koszykówka',
     'VOLLEYBALL': 'Siatkówka',
     'TENNIS': 'Tenis',
-    'PADEL': 'Padel',
-    'SWIMMING': 'Basen',
+    'SWIMMING': 'Pływanie',
+    'OTHER': 'Inne'
   }
   return labels[type] || type
+}
+
+const getTypeBadgeClasses = (type: string): string => {
+  const classes: Record<string, string> = {
+    FOOTBALL: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700/50',
+    BASKETBALL: 'text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700/50',
+    TENNIS: 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700/50',
+    VOLLEYBALL: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700/50',
+    SWIMMING: 'text-cyan-700 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700/50',
+    OTHER: 'text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600/50'
+  }
+  return classes[type] || classes.OTHER
 }
 
 // Book reservation

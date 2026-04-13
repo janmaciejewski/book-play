@@ -10,19 +10,19 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Szukaj</label>
-          <input
-            v-model="search"
-            type="text"
-            placeholder="Szukaj obiektów..."
-            class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          />
+            <input
+              v-model="search"
+              type="text"
+              placeholder="Szukaj obiektów..."
+              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+            />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ</label>
-          <select
-            v-model="typeFilter"
-            class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          >
+            <select
+              v-model="typeFilter"
+              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+            >
             <option value="">Wszystkie typy</option>
             <option value="FOOTBALL">Piłka nożna</option>
             <option value="BASKETBALL">Koszykówka</option>
@@ -34,12 +34,12 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miasto</label>
-          <input
-            v-model="cityFilter"
-            type="text"
-            placeholder="Wprowadź miasto..."
-            class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-          />
+            <input
+              v-model="cityFilter"
+              type="text"
+              placeholder="Wprowadź miasto..."
+              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
+            />
         </div>
         <div class="flex items-end">
           <button
@@ -88,8 +88,8 @@
         </div>
         <div class="p-4">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-100 dark:bg-primary-900/30 px-2 py-1 rounded border border-primary-200 dark:border-primary-700/50">
-              {{ facility.type }}
+            <span :class="getTypeBadgeClasses(facility.type)" class="text-xs font-medium px-2 py-1 rounded border">
+              {{ getTypeName(facility.type) }}
             </span>
             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ facility.hourlyRate }} PLN/h</span>
           </div>
@@ -159,6 +159,30 @@ const getTypeImage = (type: string): string => {
     OTHER: 'https://images.unsplash.com/photo-1461896836934-ffe2070f2cf4?w=800&h=600&fit=crop'
   }
   return images[type] || 'https://images.unsplash.com/photo-1461896836934-ffe2070f2cf4?w=800&h=600&fit=crop'
+}
+
+const getTypeName = (type: string): string => {
+  const names: Record<string, string> = {
+    FOOTBALL: 'Piłka nożna',
+    BASKETBALL: 'Koszykówka',
+    TENNIS: 'Tenis',
+    VOLLEYBALL: 'Siatkówka',
+    SWIMMING: 'Pływanie',
+    OTHER: 'Inne'
+  }
+  return names[type] || type
+}
+
+const getTypeBadgeClasses = (type: string): string => {
+  const classes: Record<string, string> = {
+    FOOTBALL: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700/50',
+    BASKETBALL: 'text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700/50',
+    TENNIS: 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700/50',
+    VOLLEYBALL: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700/50',
+    SWIMMING: 'text-cyan-700 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700/50',
+    OTHER: 'text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600/50'
+  }
+  return classes[type] || classes.OTHER
 }
 
 const searchFacilities = () => {
