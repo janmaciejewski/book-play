@@ -54,8 +54,10 @@
 
             <template v-if="authStore.isAuthenticated">
               <div class="hidden sm:flex sm:items-center sm:space-x-4">
+                <NuxtLink :to="`/users/${authStore.user?.id}`" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" title="Twój profil">
+                  <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                </NuxtLink>
                 <span class="text-sm text-gray-700 dark:text-gray-300">{{ authStore.user?.email }}</span>
-                <span class="text-sm text-gray-700">{{ authStore.user?.email }}</span>
                 <button
                   @click="handleLogout"
                   class="rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
