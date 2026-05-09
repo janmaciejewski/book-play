@@ -55,6 +55,7 @@
             <template v-if="authStore.isAuthenticated">
               <div class="hidden sm:flex sm:items-center sm:space-x-4">
                 <span class="text-sm text-gray-700 dark:text-gray-300">{{ authStore.user?.email }}</span>
+                <span class="text-sm text-gray-700">{{ authStore.user?.email }}</span>
                 <button
                   @click="handleLogout"
                   class="rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600"
