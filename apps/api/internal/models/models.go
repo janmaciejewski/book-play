@@ -39,17 +39,23 @@ const (
 
 // User model
 type User struct {
-	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Email        string    `gorm:"uniqueIndex;not null;size:255" json:"email"`
-	PasswordHash string    `gorm:"not null;size:255" json:"-"`
-	FirstName    string    `gorm:"not null;size:100" json:"first_name"`
-	LastName     string    `gorm:"not null;size:100" json:"last_name"`
-	Phone        *string   `gorm:"size:20" json:"phone,omitempty"`
-	Role         Role      `gorm:"type:varchar(20);default:PLAYER;not null" json:"role"`
-	Avatar       *string   `gorm:"size:500" json:"avatar,omitempty"`
-	IsActive     bool      `gorm:"default:true" json:"is_active"`
-	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID                uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email             string    `gorm:"uniqueIndex;not null;size:255" json:"email"`
+	PasswordHash      string    `gorm:"not null;size:255" json:"-"`
+	FirstName         string    `gorm:"not null;size:100" json:"first_name"`
+	LastName          string    `gorm:"not null;size:100" json:"last_name"`
+	Phone             *string   `gorm:"size:20" json:"phone,omitempty"`
+	Role              Role      `gorm:"type:varchar(20);default:PLAYER;not null" json:"role"`
+	Avatar            *string   `gorm:"size:500" json:"avatar,omitempty"`
+	Bio               *string   `gorm:"type:text" json:"bio,omitempty"`
+	City              *string   `gorm:"size:100" json:"city,omitempty"`
+	Country           *string   `gorm:"size:100" json:"country,omitempty"`
+	Position          *string   `gorm:"size:100" json:"position,omitempty"`
+	PreferredPosition *string   `gorm:"size:100" json:"preferred_position,omitempty"`
+	Age               *int      `json:"age,omitempty"`
+	IsActive          bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt         time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt         time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 
 	// Relations
 	Facilities    []Facility     `gorm:"foreignKey:OwnerID" json:"facilities,omitempty"`
@@ -58,12 +64,8 @@ type User struct {
 	RefreshTokens []RefreshToken `gorm:"foreignKey:UserID" json:"-"`
 }
 
-// TableName for User
-func (User) TableName() string {
-	return "users"
-}
+func (User) TableName() string { return "users" }
 
-// BeforeCreate hook for User
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
@@ -81,12 +83,8 @@ type RefreshToken struct {
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
-// TableName for RefreshToken
-func (RefreshToken) TableName() string {
-	return "refresh_tokens"
-}
+func (RefreshToken) TableName() string { return "refresh_tokens" }
 
-// BeforeCreate hook for RefreshToken
 func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()
@@ -99,7 +97,7 @@ type Facility struct {
 	ID          uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	Name        string          `gorm:"not null;size:200" json:"name"`
 	Description *string         `gorm:"type:text" json:"description,omitempty"`
-	Type        string          `gorm:"not null;size:50" json:"type"` // football, basketball, tennis
+	Type        string          `gorm:"not null;size:50" json:"type"`
 	Address     string          `gorm:"not null;size:500" json:"address"`
 	City        string          `gorm:"not null;size:100;index" json:"city"`
 	Lat         *float64        `gorm:"type:decimal(10,8)" json:"lat,omitempty"`
@@ -113,17 +111,12 @@ type Facility struct {
 	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt   time.Time       `gorm:"autoUpdateTime" json:"updatedAt"`
 
-	// Relations
 	Slots        []FacilitySlot `gorm:"foreignKey:FacilityID" json:"slots,omitempty"`
 	Reservations []Reservation  `gorm:"foreignKey:FacilityID" json:"reservations,omitempty"`
 }
 
-// TableName for Facility
-func (Facility) TableName() string {
-	return "facilities"
-}
+func (Facility) TableName() string { return "facilities" }
 
-// BeforeCreate hook for Facility
 func (f *Facility) BeforeCreate(tx *gorm.DB) error {
 	if f.ID == uuid.Nil {
 		f.ID = uuid.New()
@@ -131,7 +124,6 @@ func (f *Facility) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// JSONB type for PostgreSQL JSONB
 type JSONB map[string]interface{}
 
 // FacilitySlot model
@@ -139,18 +131,14 @@ type FacilitySlot struct {
 	ID         uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
 	FacilityID uuid.UUID        `gorm:"type:uuid;not null;uniqueIndex:facility_day" json:"facility_id"`
 	Facility   Facility         `gorm:"foreignKey:FacilityID" json:"facility,omitempty"`
-	DayOfWeek  int              `gorm:"not null;uniqueIndex:facility_day" json:"day_of_week"` // 0-6 (Sunday-Saturday)
-	OpenTime   string           `gorm:"not null;size:5" json:"open_time"`                     // "08:00"
-	CloseTime  string           `gorm:"not null;size:5" json:"close_time"`                    // "22:00"
-	Price      *decimal.Decimal `gorm:"type:decimal(10,2)" json:"price,omitempty"`            // Optional override
+	DayOfWeek  int              `gorm:"not null;uniqueIndex:facility_day" json:"day_of_week"`
+	OpenTime   string           `gorm:"not null;size:5" json:"open_time"`
+	CloseTime  string           `gorm:"not null;size:5" json:"close_time"`
+	Price      *decimal.Decimal `gorm:"type:decimal(10,2)" json:"price,omitempty"`
 }
 
-// TableName for FacilitySlot
-func (FacilitySlot) TableName() string {
-	return "facility_slots"
-}
+func (FacilitySlot) TableName() string { return "facility_slots" }
 
-// BeforeCreate hook for FacilitySlot
 func (f *FacilitySlot) BeforeCreate(tx *gorm.DB) error {
 	if f.ID == uuid.Nil {
 		f.ID = uuid.New()
@@ -168,22 +156,18 @@ type Reservation struct {
 	TeamID     *uuid.UUID        `gorm:"type:uuid;index" json:"teamId,omitempty"`
 	Team       *Team             `gorm:"foreignKey:TeamID" json:"team,omitempty"`
 	Date       time.Time         `gorm:"type:date;not null;uniqueIndex:facility_date_time" json:"date"`
-	StartTime  string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"startTime"` // "10:00"
-	EndTime    string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"endTime"`   // "11:00"
+	StartTime  string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"startTime"`
+	EndTime    string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"endTime"`
 	Status     ReservationStatus `gorm:"type:varchar(20);default:PENDING;not null" json:"status"`
 	TotalPrice decimal.Decimal   `gorm:"type:decimal(10,2);not null" json:"totalPrice"`
 	Notes      *string           `gorm:"type:text" json:"notes,omitempty"`
-	Version    int               `gorm:"default:0" json:"version"` // Optimistic locking
+	Version    int               `gorm:"default:0" json:"version"`
 	CreatedAt  time.Time         `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt  time.Time         `gorm:"autoUpdateTime" json:"updatedAt"`
 }
 
-// TableName for Reservation
-func (Reservation) TableName() string {
-	return "reservations"
-}
+func (Reservation) TableName() string { return "reservations" }
 
-// BeforeCreate hook for Reservation
 func (r *Reservation) BeforeCreate(tx *gorm.DB) error {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()
@@ -193,24 +177,21 @@ func (r *Reservation) BeforeCreate(tx *gorm.DB) error {
 
 // Team model
 type Team struct {
-	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name        string    `gorm:"not null;size:200" json:"name"`
-	Description *string   `gorm:"type:text" json:"description,omitempty"`
-	CaptainID   uuid.UUID `gorm:"type:uuid;not null" json:"captain_id"`
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID              uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name            string    `gorm:"not null;size:200" json:"name"`
+	Description     *string   `gorm:"type:text" json:"description,omitempty"`
+	CaptainID       uuid.UUID `gorm:"type:uuid;not null" json:"captain_id"`
+	Logo            *string   `gorm:"size:500" json:"logo,omitempty"`
+	RecruitmentOpen bool      `gorm:"default:false" json:"recruitment_open"`
+	CreatedAt       time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt       time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 
-	// Relations
 	Members      []TeamMember  `gorm:"foreignKey:TeamID" json:"members,omitempty"`
 	Reservations []Reservation `gorm:"foreignKey:TeamID" json:"reservations,omitempty"`
 }
 
-// TableName for Team
-func (Team) TableName() string {
-	return "teams"
-}
+func (Team) TableName() string { return "teams" }
 
-// BeforeCreate hook for Team
 func (t *Team) BeforeCreate(tx *gorm.DB) error {
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
@@ -225,16 +206,12 @@ type TeamMember struct {
 	Team     Team      `gorm:"foreignKey:TeamID" json:"team,omitempty"`
 	UserID   uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:team_user;index" json:"user_id"`
 	User     User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Role     TeamRole  `gorm:"type:varchar(20);default:MEMBER;not null" json:"role"` // CAPTAIN, ADMIN, MEMBER
+	Role     TeamRole  `gorm:"type:varchar(20);default:MEMBER;not null" json:"role"`
 	JoinedAt time.Time `gorm:"autoCreateTime" json:"joined_at"`
 }
 
-// TableName for TeamMember
-func (TeamMember) TableName() string {
-	return "team_members"
-}
+func (TeamMember) TableName() string { return "team_members" }
 
-// BeforeCreate hook for TeamMember
 func (t *TeamMember) BeforeCreate(tx *gorm.DB) error {
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
@@ -242,5 +219,43 @@ func (t *TeamMember) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// StringArray type for PostgreSQL text[]
+// TeamRecruitmentApplication model
+type TeamRecruitmentApplication struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	TeamID    uuid.UUID `gorm:"type:uuid;not null;index" json:"team_id"`
+	Team      Team      `gorm:"foreignKey:TeamID" json:"team,omitempty"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
+	User      User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Message   string    `gorm:"type:text;not null" json:"message"`
+	Status    string    `gorm:"type:varchar(20);default:PENDING;not null" json:"status"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+}
+
+func (TeamRecruitmentApplication) TableName() string { return "team_recruitment_applications" }
+
+func (a *TeamRecruitmentApplication) BeforeCreate(tx *gorm.DB) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
+	}
+	return nil
+}
+
+// EmailVerificationOTP model
+type EmailVerificationOTP struct {
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email     string    `gorm:"not null;size:255;index" json:"email"`
+	Code      string    `gorm:"not null;size:6" json:"code"`
+	ExpiresAt time.Time `gorm:"not null" json:"expires_at"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+}
+
+func (EmailVerificationOTP) TableName() string { return "email_verification_otps" }
+
+func (o *EmailVerificationOTP) BeforeCreate(tx *gorm.DB) error {
+	if o.ID == uuid.Nil {
+		o.ID = uuid.New()
+	}
+	return nil
+}
+
 type StringArray []string

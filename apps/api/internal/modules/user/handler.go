@@ -8,37 +8,26 @@ import (
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
 )
 
-type Handler struct {
-	service *Service
+type Handler struct{ service *Service }
+
+func NewHandler(service *Service) *Handler { return &Handler{service: service} }
+
+type UpdateRoleDTO struct {
+	Role string `json:"role" binding:"required"`
 }
 
-func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
-}
-
-// GetAll godoc
-// @Summary Get all users
-// @Description Get list of all users (admin only)
-// @Tags users
-// @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
-// @Router /users [get]
 func (h *Handler) GetAll(c *gin.Context) {
-	// Check if user is admin
 	userRole, _ := c.Get("role")
 	if userRole != models.RoleAdmin && userRole != string(models.RoleAdmin) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
 		return
 	}
-
 	users, err := h.service.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 		return
 	}
-
-	// Remove password hashes from response
-	type UserResponse struct {
+	type R struct {
 		ID        string  `json:"id"`
 		Email     string  `json:"email"`
 		FirstName string  `json:"first_name"`
@@ -47,102 +36,76 @@ func (h *Handler) GetAll(c *gin.Context) {
 		Role      string  `json:"role"`
 		IsActive  bool    `json:"is_active"`
 	}
-
-	response := make([]UserResponse, len(users))
-	for i, user := range users {
-		response[i] = UserResponse{
-			ID:        user.ID.String(),
-			Email:     user.Email,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Phone:     user.Phone,
-			Role:      string(user.Role),
-			IsActive:  user.IsActive,
-		}
+	resp := make([]R, len(users))
+	for i, u := range users {
+		resp[i] = R{ID: u.ID.String(), Email: u.Email, FirstName: u.FirstName, LastName: u.LastName, Phone: u.Phone, Role: string(u.Role), IsActive: u.IsActive}
 	}
-
-	c.JSON(http.StatusOK, gin.H{"data": response})
+	c.JSON(http.StatusOK, gin.H{"data": resp})
 }
 
-// UpdateRoleDTO for updating user role
-type UpdateRoleDTO struct {
-	Role string `json:"role" binding:"required"`
-}
-
-// UpdateRole godoc
-// @Summary Update user role
-// @Description Update a user's role (admin only)
-// @Tags users
-// @Security BearerAuth
-// @Param id path string true "User ID"
-// @Param request body UpdateRoleDTO true "New role"
-// @Success 200 {object} map[string]string
-// @Router /users/{id}/role [put]
-func (h *Handler) UpdateRole(c *gin.Context) {
-	// Check if user is admin
-	userRole, _ := c.Get("role")
-	if userRole != models.RoleAdmin && userRole != string(models.RoleAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
-		return
-	}
-
+func (h *Handler) GetProfile(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
 		return
 	}
+	user, err := h.service.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
 
+func (h *Handler) UpdateProfile(c *gin.Context) {
+	userIDStr, _ := c.Get("userID")
+	userID, _ := uuid.Parse(userIDStr.(string))
+	paramID, err := uuid.Parse(c.Param("id"))
+	if err != nil || userID != paramID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You can only update your own profile"})
+		return
+	}
+	var dto UpdateProfileDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.service.UpdateProfile(userID, &dto)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
+func (h *Handler) UpdateRole(c *gin.Context) {
+	userRole, _ := c.Get("role")
+	if userRole != models.RoleAdmin && userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		return
+	}
+	id, _ := uuid.Parse(c.Param("id"))
 	var dto UpdateRoleDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	// Validate role
-	validRoles := map[string]bool{
-		"ADMIN":          true,
-		"FACILITY_OWNER": true,
-		"PLAYER":         true,
-	}
-	if !validRoles[dto.Role] {
+	valid := map[string]bool{"ADMIN": true, "FACILITY_OWNER": true, "PLAYER": true}
+	if !valid[dto.Role] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
 		return
 	}
-
-	if err := h.service.UpdateRole(id, dto.Role); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update role"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Role updated successfully"})
+	h.service.UpdateRole(id, dto.Role)
+	c.JSON(http.StatusOK, gin.H{"message": "Role updated"})
 }
 
-// Delete godoc
-// @Summary Delete a user
-// @Description Delete a user (admin only)
-// @Tags users
-// @Security BearerAuth
-// @Param id path string true "User ID"
-// @Success 200 {object} map[string]string
-// @Router /users/{id} [delete]
 func (h *Handler) Delete(c *gin.Context) {
-	// Check if user is admin
 	userRole, _ := c.Get("role")
 	if userRole != models.RoleAdmin && userRole != string(models.RoleAdmin) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
 		return
 	}
-
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	if err := h.service.Delete(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
+	id, _ := uuid.Parse(c.Param("id"))
+	h.service.Delete(id)
+	c.JSON(http.StatusOK, gin.H{"message": "User deleted"})
 }
