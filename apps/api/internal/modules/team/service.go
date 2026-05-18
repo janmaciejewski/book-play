@@ -24,6 +24,31 @@ func (s *Service) GetAll() ([]models.Team, error) {
 	return teams, nil
 }
 
+// GetAllPublicOrUserTeams returns teams visible to the given user:
+// - All teams if user is ADMIN
+// - Teams with open recruitment OR teams the user is a member of otherwise
+func (s *Service) GetAllPublicOrUserTeams(userID uuid.UUID, role string) ([]models.Team, error) {
+	if role == "ADMIN" {
+		return s.GetAll()
+	}
+
+	var memberTeamIDs []uuid.UUID
+	s.db.Model(&models.TeamMember{}).Where("user_id = ?", userID).Pluck("team_id", &memberTeamIDs)
+
+	query := s.db.Preload("Members").Preload("Members.User")
+	if len(memberTeamIDs) > 0 {
+		query = query.Where("recruitment_open = ? OR id IN ?", true, memberTeamIDs)
+	} else {
+		query = query.Where("recruitment_open = ?", true)
+	}
+
+	var teams []models.Team
+	if err := query.Find(&teams).Error; err != nil {
+		return nil, err
+	}
+	return teams, nil
+}
+
 func (s *Service) GetByID(id uuid.UUID) (*models.Team, error) {
 	var team models.Team
 	if err := s.db.Preload("Members").Preload("Members.User").First(&team, "id = ?", id).Error; err != nil {

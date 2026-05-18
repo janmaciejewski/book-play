@@ -46,7 +46,18 @@ func (h *Handler) GetMyTeams(c *gin.Context) {
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
-	teams, err := h.service.GetAll()
+	userID, err := h.getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	role, _ := c.Get("role")
+	roleStr := ""
+	if role != nil {
+		roleStr = role.(string)
+	}
+
+	teams, err := h.service.GetAllPublicOrUserTeams(userID, roleStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
@@ -60,12 +71,36 @@ func (h *Handler) GetByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
+
 	team, err := h.service.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": team})
+
+	// Visibility check: admin sees all, others need open recruitment or membership
+	role, _ := c.Get("role")
+	if role != nil && role.(string) == "ADMIN" {
+		c.JSON(http.StatusOK, gin.H{"data": team})
+		return
+	}
+
+	if team.RecruitmentOpen {
+		c.JSON(http.StatusOK, gin.H{"data": team})
+		return
+	}
+
+	userID, err := h.getUserID(c)
+	if err == nil {
+		for _, m := range team.Members {
+			if m.UserID == userID {
+				c.JSON(http.StatusOK, gin.H{"data": team})
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusForbidden, gin.H{"error": "You do not have access to this team"})
 }
 
 func (h *Handler) Create(c *gin.Context) {

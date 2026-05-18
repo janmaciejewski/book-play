@@ -110,6 +110,24 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// If team_id is provided, verify user is the team captain
+	if dto.TeamID != nil && *dto.TeamID != "" {
+		teamID, err := uuid.Parse(*dto.TeamID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
+			return
+		}
+		isCaptain, err := h.service.IsUserTeamCaptain(userID, teamID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify team membership"})
+			return
+		}
+		if !isCaptain {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can make reservations for the team"})
+			return
+		}
+	}
+
 	reservation, err := h.service.CreateFromDTO(&dto, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create reservation"})
@@ -167,4 +185,78 @@ func (h *Handler) Cancel(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reservation cancelled successfully"})
+}
+
+// GetForFacilityOwner returns reservations for facilities owned by the authenticated user,
+// or all reservations if the user is ADMIN
+func (h *Handler) GetForFacilityOwner(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	if role != nil && role.(string) == "ADMIN" {
+		reservations, err := h.service.GetAll()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reservations"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"data": reservations})
+		return
+	}
+
+	reservations, err := h.service.GetByFacilityOwnerID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reservations"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": reservations})
+}
+
+// UpdateStatus allows facility owner to confirm or decline a pending reservation
+func (h *Handler) UpdateStatus(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	reservationID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid reservation ID"})
+		return
+	}
+
+	var body struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	status := models.ReservationStatus(body.Status)
+	if status != models.StatusConfirmed && status != models.StatusCancelled {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status must be CONFIRMED or CANCELLED"})
+		return
+	}
+
+	if err := h.service.UpdateReservationStatus(reservationID, userID, status); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Reservation status updated"})
 }

@@ -93,22 +93,27 @@ func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 
 // Facility model
 type Facility struct {
-	ID          uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name        string          `gorm:"not null;size:200" json:"name"`
-	Description *string         `gorm:"type:text" json:"description,omitempty"`
-	Type        string          `gorm:"not null;size:50" json:"type"`
-	Address     string          `gorm:"not null;size:500" json:"address"`
-	City        string          `gorm:"not null;size:100;index" json:"city"`
-	Lat         *float64        `gorm:"type:decimal(10,8)" json:"lat,omitempty"`
-	Lng         *float64        `gorm:"type:decimal(11,8)" json:"lng,omitempty"`
-	OwnerID     uuid.UUID       `gorm:"type:uuid;not null;index" json:"ownerId"`
-	Owner       User            `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
-	HourlyRate  decimal.Decimal `gorm:"type:decimal(10,2);not null" json:"hourlyRate"`
-	Amenities   *JSONB          `gorm:"type:jsonb" json:"amenities,omitempty"`
-	Images      StringArray     `gorm:"type:text[]" json:"images,omitempty"`
-	IsActive    bool            `gorm:"default:true" json:"isActive"`
-	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt   time.Time       `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID                 uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name               string           `gorm:"not null;size:200" json:"name"`
+	Description        *string          `gorm:"type:text" json:"description,omitempty"`
+	Type               string           `gorm:"not null;size:50" json:"type"`
+	Address            string           `gorm:"not null;size:500" json:"address"`
+	City               string           `gorm:"not null;size:100;index" json:"city"`
+	Lat                *float64         `gorm:"type:decimal(10,8)" json:"lat,omitempty"`
+	Lng                *float64         `gorm:"type:decimal(11,8)" json:"lng,omitempty"`
+	OwnerID            uuid.UUID        `gorm:"type:uuid;not null;index" json:"ownerId"`
+	Owner              User             `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
+	HourlyRate         decimal.Decimal  `gorm:"type:decimal(10,2);not null" json:"hourlyRate"`
+	Amenities          *JSONB           `gorm:"type:jsonb" json:"amenities,omitempty"`
+	Images             StringArray      `gorm:"type:text[]" json:"images,omitempty"`
+	IsActive           bool             `gorm:"default:true" json:"isActive"`
+	ClosedUntil        *time.Time       `gorm:"type:timestamp" json:"closedUntil,omitempty"`
+	RequiresPrepayment bool             `gorm:"default:false" json:"requiresPrepayment"`
+	PrepaymentCost     *decimal.Decimal `gorm:"type:decimal(10,2)" json:"prepaymentCost,omitempty"`
+	BankAccount        *string          `gorm:"size:200" json:"bankAccount,omitempty"`
+	TransferTitle      *string          `gorm:"size:200" json:"transferTitle,omitempty"`
+	CreatedAt          time.Time        `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt          time.Time        `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	Slots        []FacilitySlot `gorm:"foreignKey:FacilityID" json:"slots,omitempty"`
 	Reservations []Reservation  `gorm:"foreignKey:FacilityID" json:"reservations,omitempty"`

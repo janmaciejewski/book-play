@@ -138,6 +138,15 @@
                 </select>
               </div>
 
+              <!-- Prepayment Warning -->
+              <div v-if="facility?.requiresPrepayment" class="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-3 text-sm text-red-800 dark:text-red-300">
+                <p class="font-semibold mb-1">⚠ UWAGA! Ten obiekt wymaga przedpłaty!</p>
+                <p class="mb-1">Koszt przedpłaty: <strong>{{ facility.prepaymentCost }} PLN</strong></p>
+                <p class="mb-1">Konto bankowe: <strong>{{ facility.bankAccount }}</strong></p>
+                <p>Tytuł przelewu: <strong>{{ facility.transferTitle }}</strong></p>
+                <p class="mt-2 text-xs">Przedpłata powinna zostać wykonana najpóźniej 24 godziny przed rezerwacją.</p>
+              </div>
+
               <hr />
 
               <div class="flex justify-between text-lg font-semibold text-gray-900 dark:text-white">
@@ -177,7 +186,11 @@ interface Facility {
   type: string
   address: string
   city: string
-  hourlyRate: number | string // API returns camelCase
+  hourlyRate: number | string
+  requiresPrepayment?: boolean
+  prepaymentCost?: number | string
+  bankAccount?: string
+  transferTitle?: string
 }
 
 interface FacilityResponse {
@@ -204,13 +217,17 @@ const facilityId = route.params.id as string
 const { data: facilityResponse, pending, error } = await useFetch<FacilityResponse>(`http://localhost:8080/api/v1/facilities/${facilityId}`)
 const facility = computed(() => facilityResponse.value?.data)
 
-// Fetch teams for selection
-const { data: teamsResponse } = await useFetch<TeamsResponse>('http://localhost:8080/api/v1/teams', {
+// Fetch teams where user is captain
+interface MyTeamResponse { data: Team[] }
+const { data: myTeamsResponse } = await useFetch<MyTeamResponse>('http://localhost:8080/api/v1/my-teams', {
   headers: {
     Authorization: `Bearer ${useCookie('token').value || ''}`
   }
 })
-const teams = computed(() => teamsResponse.value?.data || [])
+const teams = computed(() => {
+  const raw = myTeamsResponse.value?.data || []
+  return raw.filter((t: any) => t.userRole === 'CAPTAIN')
+})
 
 // Booking state
 const selectedDate = ref('')

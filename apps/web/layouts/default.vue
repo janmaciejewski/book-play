@@ -8,7 +8,8 @@
               <span class="text-2xl font-bold text-primary-600">BookPlay</span>
             </NuxtLink>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <NuxtLink
+              <NuxtLink
+                  v-if="authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
                   to="/facilities"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
@@ -16,7 +17,7 @@
                 Obiekty
               </NuxtLink>
                 <NuxtLink
-                  v-if="authStore.isAuthenticated"
+                  v-if="authStore.isAuthenticated && authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
                   to="/reservations"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
@@ -24,12 +25,28 @@
                 Moje rezerwacje
               </NuxtLink>
                 <NuxtLink
-                  v-if="authStore.isAuthenticated"
+                  v-if="authStore.isAuthenticated && authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
                   to="/teams"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
               >
                 Drużyny
+              </NuxtLink>
+                <NuxtLink
+                  v-if="authStore.user?.role === 'FACILITY_OWNER' || authStore.user?.role === 'ADMIN'"
+                  to="/facilities/owner"
+                  class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
+                  active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
+              >
+                {{ authStore.user?.role === 'ADMIN' ? 'Obiekty' : 'Moje obiekty' }}
+              </NuxtLink>
+                <NuxtLink
+                  v-if="authStore.user?.role === 'FACILITY_OWNER' || authStore.user?.role === 'ADMIN'"
+                  to="/facilities/my-reservations"
+                  class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
+                  active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
+              >
+                {{ authStore.user?.role === 'ADMIN' ? 'Rezerwacje' : 'Rezerwacje' }}
               </NuxtLink>
                 <NuxtLink
                   v-if="authStore.user?.role === 'ADMIN'"

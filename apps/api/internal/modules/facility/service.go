@@ -17,6 +17,65 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
+// GetByOwnerID returns all facilities owned by the given user
+func (s *Service) GetByOwnerID(ownerID uuid.UUID) ([]models.Facility, error) {
+	var facilities []models.Facility
+	if err := s.db.Preload("Slots").Where("owner_id = ?", ownerID).Find(&facilities).Error; err != nil {
+		return nil, err
+	}
+	return facilities, nil
+}
+
+// UpdateByOwner updates a facility, verifying ownership
+func (s *Service) UpdateByOwner(facilityID, ownerID uuid.UUID, updates map[string]interface{}) error {
+	result := s.db.Model(&models.Facility{}).
+		Where("id = ? AND owner_id = ?", facilityID, ownerID).
+		Updates(updates)
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return result.Error
+}
+
+// UpdateByAdmin updates any facility without ownership check
+func (s *Service) UpdateByAdmin(facilityID uuid.UUID, updates map[string]interface{}) error {
+	result := s.db.Model(&models.Facility{}).
+		Where("id = ?", facilityID).
+		Updates(updates)
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return result.Error
+}
+
+// UpdateSlots replaces all slots for a facility
+func (s *Service) UpdateSlots(facilityID uuid.UUID, slots []models.FacilitySlot) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("facility_id = ?", facilityID).Delete(&models.FacilitySlot{}).Error; err != nil {
+			return err
+		}
+		for i := range slots {
+			slots[i].ID = uuid.Nil // force new ID
+			slots[i].FacilityID = facilityID
+			if err := tx.Create(&slots[i]).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// SetClosed closes or reopens a facility
+func (s *Service) SetClosed(facilityID, ownerID uuid.UUID, closedUntil *time.Time) error {
+	result := s.db.Model(&models.Facility{}).
+		Where("id = ? AND owner_id = ?", facilityID, ownerID).
+		Update("closed_until", closedUntil)
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return result.Error
+}
+
 func (s *Service) GetAll(filterType, filterCity string) ([]models.Facility, error) {
 	var facilities []models.Facility
 	query := s.db.Model(&models.Facility{})
@@ -44,6 +103,15 @@ func (s *Service) GetByID(id uuid.UUID) (*models.Facility, error) {
 
 func (s *Service) Create(facility *models.Facility) error {
 	return s.db.Create(facility).Error
+}
+
+// LookupUserByEmail finds a user by email (for admin facility creation)
+func (s *Service) LookupUserByEmail(email string) (*models.User, error) {
+	var user models.User
+	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // GetAvailability returns available time slots for a facility on a given date
