@@ -81,7 +81,7 @@ func (s *Service) UpdateMemberRole(teamID, memberID uuid.UUID, newRole models.Te
 			return err
 		}
 		if newRole == models.TeamRoleCaptain && member.Role != models.TeamRoleCaptain {
-			tx.Model(&models.TeamMember{}).Where("team_id = ? AND role = ?", teamID, models.TeamRoleCaptain).Update("role", models.TeamRoleAdmin)
+			tx.Model(&models.TeamMember{}).Where("team_id = ? AND role = ?", teamID, models.TeamRoleCaptain).Update("role", models.TeamRoleMember)
 			tx.Model(&models.Team{}).Where("id = ?", teamID).Update("captain_id", member.UserID)
 		}
 		return tx.Model(&member).Update("role", newRole).Error
@@ -137,10 +137,10 @@ func (s *Service) IsMemberSelf(teamID, memberID, userID uuid.UUID) (bool, error)
 	return true, nil
 }
 
-func (s *Service) IsUserCaptainOrAdmin(teamID, userID uuid.UUID) (bool, error) {
+func (s *Service) IsUserCaptain(teamID, userID uuid.UUID) (bool, error) {
 	var member models.TeamMember
-	err := s.db.Where("team_id = ? AND user_id = ? AND role IN ?",
-		teamID, userID, []models.TeamRole{models.TeamRoleCaptain, models.TeamRoleAdmin}).First(&member).Error
+	err := s.db.Where("team_id = ? AND user_id = ? AND role = ?",
+		teamID, userID, models.TeamRoleCaptain).First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil

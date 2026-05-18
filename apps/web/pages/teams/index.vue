@@ -106,7 +106,7 @@ const teams = computed(() => {
 })
 const showAllTeams = computed(() => !showMyTeams.value)
 function isMember(team: Team): boolean { return !!team.userRole }
-function getRoleLabel(role: string): string { const l: Record<string,string>={CAPTAIN:'Kapitan',ADMIN:'Administrator',MEMBER:'Członek'}; return l[role]||role }
+function getRoleLabel(role: string): string { const l: Record<string,string>={CAPTAIN:'Kapitan',MEMBER:'Członek'}; return l[role]||role }
 watch(showMyTeams, () => refresh())
 
 const createTeam = async () => {

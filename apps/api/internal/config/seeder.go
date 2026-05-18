@@ -13,6 +13,9 @@ import (
 
 // SeedDatabase seeds the database with initial data
 func SeedDatabase(db *gorm.DB) error {
+	// Ensure test user and reservation always exist (idempotent)
+	ensureTestUserAndReservation(db)
+
 	// Check if already seeded
 	var count int64
 	db.Model(&models.User{}).Count(&count)
@@ -399,4 +402,73 @@ func strPtr(s string) *string {
 
 func floatPtr(f float64) *float64 {
 	return &f
+}
+
+// ensureTestUserAndReservation creates the test user and a reservation 3 days from now
+// so the reminder email can be tested. Idempotent - skips if already exists.
+func ensureTestUserAndReservation(db *gorm.DB) {
+	testUserID := uuid.MustParse("40000000-0000-0000-0000-000000000001")
+	testReservationID := uuid.MustParse("40000000-0000-0000-0000-000000000001")
+
+	// Create test user if not exists
+	var existingUser models.User
+	if err := db.Where("id = ?", testUserID).First(&existingUser).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			phone := "+48718301025"
+			testUser := models.User{
+				ID:           testUserID,
+				Email:        "mufipl@gmail.com",
+				PasswordHash: hashPassword("mufipl123"),
+				FirstName:    "Mufi",
+				LastName:     "P",
+				Phone:        &phone,
+				Role:         models.RolePlayer,
+				IsActive:     true,
+			}
+			if err := db.Create(&testUser).Error; err != nil {
+				log.Printf("Warning: Failed to create test user: %v", err)
+				return
+			}
+			log.Println("✅ Created test user: mufipl@gmail.com / mufipl123")
+		} else {
+			log.Printf("Warning: Failed to check for test user: %v", err)
+			return
+		}
+	} else {
+		log.Println("Test user already exists: mufipl@gmail.com")
+	}
+
+	// Create test reservation exactly 3 days from now if not exists
+	var existingReservation models.Reservation
+	if err := db.Where("id = ?", testReservationID).First(&existingReservation).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			threeDaysFromNow := time.Now().AddDate(0, 0, 3)
+			reservationDate := time.Date(
+				threeDaysFromNow.Year(), threeDaysFromNow.Month(), threeDaysFromNow.Day(),
+				0, 0, 0, 0, threeDaysFromNow.Location(),
+			)
+
+			notes := "Rezerwacja testowa dla przypomnienia email"
+			testReservation := models.Reservation{
+				ID:         testReservationID,
+				FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
+				UserID:     testUserID,
+				Date:       reservationDate,
+				StartTime:  "10:00",
+				EndTime:    "12:00",
+				Status:     models.StatusConfirmed,
+				TotalPrice: decimal.NewFromFloat(160.00),
+				Notes:      &notes,
+			}
+			if err := db.Create(&testReservation).Error; err != nil {
+				log.Printf("Warning: Failed to create test reservation: %v", err)
+				return
+			}
+			log.Println("✅ Created test reservation for reminder (3 days from now)")
+		} else {
+			log.Printf("Warning: Failed to check for test reservation: %v", err)
+		}
+	} else {
+		log.Println("Test reservation already exists")
+	}
 }

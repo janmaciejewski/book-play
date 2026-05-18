@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/janmaciejewski/book-play/apps/api/internal/config"
@@ -135,6 +136,24 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	// Start the reminder scheduler as a background goroutine
+	go func() {
+		log.Println("📧 Reservation reminder scheduler started (checking every hour)")
+		// Run immediately on startup for testing
+		log.Println("Running initial reminder check...")
+		if err := mailService.ProcessReminders(); err != nil {
+			log.Printf("Warning: Initial reminder check failed: %v", err)
+		}
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			log.Println("Running scheduled reminder check...")
+			if err := mailService.ProcessReminders(); err != nil {
+				log.Printf("Warning: Reminder check failed: %v", err)
+			}
+		}
+	}()
+
 	fmt.Printf("Server starting on port %s...\n", port)
 	if err := router.Run(":" + port); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to start server: %v\n", err)

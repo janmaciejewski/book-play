@@ -1,8 +1,16 @@
 <template>
   <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Obiekty</h1>
-      <p class="mt-2 text-gray-600 dark:text-gray-400">Przeglądaj i rezerwuj obiekty sportowe w swojej okolicy</p>
+    <div class="mb-8 flex items-start justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Obiekty</h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">Przeglądaj i rezerwuj obiekty sportowe w swojej okolicy</p>
+      </div>
+      <button
+        @click="navigateTo('/facilities/report')"
+        class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors font-medium"
+      >
+        Zgłoś obiekt
+      </button>
     </div>
 
     <!-- Search and Filters -->
@@ -31,15 +39,6 @@
             <option value="SWIMMING">Pływanie</option>
             <option value="OTHER">Inne</option>
           </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Miasto</label>
-            <input
-              v-model="cityFilter"
-              type="text"
-              placeholder="Wprowadź miasto..."
-              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
-            />
         </div>
         <div class="flex items-end">
           <button
@@ -147,7 +146,12 @@ const apiUrl = computed(() => {
 
 const { data: response, pending, error, refresh } = await useFetch<FacilitiesResponse>(apiUrl)
 
-const facilities = computed(() => response.value?.data || [])
+const facilities = computed(() => {
+  const raw = response.value?.data || []
+  if (!search.value.trim()) return raw
+  const q = search.value.toLowerCase()
+  return raw.filter(f => f.name.toLowerCase().includes(q))
+})
 
 const getTypeImage = (type: string): string => {
   const images: Record<string, string> = {
