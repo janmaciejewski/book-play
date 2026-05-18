@@ -68,25 +68,11 @@ type MinioConfig struct {
 var AppConfigInstance *Config
 
 func Load() (*Config, error) {
-	// Load .env file if exists (ignore error in production)
-	// Try multiple paths for .env file
-	envPaths := []string{
-		".env",          // When running from root with air
-		"../../.env",    // When running from apps/api directory
-		"../../../.env", // When running from apps/api/cmd/server directory
-		"apps/api/.env", // Alternative path
-	}
-
-	loaded := false
-	for _, path := range envPaths {
-		if err := godotenv.Load(path); err == nil {
-			fmt.Printf("Loaded environment from: %s\n", path)
-			loaded = true
-			break
-		}
-	}
-	if !loaded {
-		fmt.Println("Warning: No .env file found, using environment variables and defaults")
+	// Load .env file from project root (always the single source of truth)
+	if err := godotenv.Load(".env"); err != nil {
+		fmt.Println("Warning: No .env file found at project root, using environment variables and defaults")
+	} else {
+		fmt.Println("Loaded environment from: .env (project root)")
 	}
 
 	cfg := &Config{

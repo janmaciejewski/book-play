@@ -159,13 +159,16 @@ func (s *Service) ProcessReminders() error {
 
 func (s *Service) sendOTPEmail(to, code string) error {
 	cfg := config.AppConfigInstance.SMTP
+	fmt.Printf("[OTP EMAIL] Sending OTP to %s via SMTP host=%s port=%s user=%s\n", to, cfg.Host, cfg.Port, cfg.User)
 	subject := "BookPlay - Kod weryfikacyjny"
 	body := fmt.Sprintf("Witaj!\r\n\r\nTw\xc3\xb3j kod weryfikacyjny dla BookPlay to: %s\r\n\r\nKod jest wa\xc5\xbcny przez 10 minut.\r\n\r\nPozdrawiamy,\r\nZesp\xc3\xb3\xc5\x82 BookPlay", code)
 	msg := []byte(fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", cfg.From, to, encodeSubject(subject), body))
 	auth := smtp.PlainAuth("", cfg.User, cfg.Password, cfg.Host)
 	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 	if err := smtp.SendMail(addr, auth, cfg.User, []string{to}, msg); err != nil {
+		fmt.Printf("[OTP EMAIL] SMTP send failed: %v\n", err)
 		return fmt.Errorf("SMTP error: %w", err)
 	}
+	fmt.Printf("[OTP EMAIL] Successfully sent OTP to %s\n", to)
 	return nil
 }
