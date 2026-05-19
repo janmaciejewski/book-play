@@ -140,7 +140,7 @@ func (h *Handler) GetMe(c *gin.Context) {
 	}
 	user, err := h.service.GetUserByID(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{

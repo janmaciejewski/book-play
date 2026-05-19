@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
+	"github.com/shopspring/decimal"
 )
 
 type Handler struct {
@@ -71,7 +72,8 @@ type CreateDTO struct {
 	City        string   `json:"city" binding:"required"`
 	Lat         *float64 `json:"lat"`
 	Lng         *float64 `json:"lng"`
-	HourlyRate  float64  `json:"hourly_rate" binding:"required"`
+	HourlyRate  *float64 `json:"hourly_rate"`
+	OwnerEmail  *string  `json:"owner_email"`
 }
 
 // Create godoc
@@ -98,6 +100,19 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	ownerID := userID
+
+	// Admin can create facilities for other owners
+	userRole, _ := c.Get("role")
+	if userRole != nil && userRole.(string) == "ADMIN" && dto.OwnerEmail != nil && *dto.OwnerEmail != "" {
+		ownerUser, err := h.service.LookupUserByEmail(*dto.OwnerEmail)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Owner not found with that email"})
+			return
+		}
+		ownerID = ownerUser.ID
+	}
+
 	facility := &models.Facility{
 		Name:        dto.Name,
 		Description: dto.Description,
@@ -106,7 +121,7 @@ func (h *Handler) Create(c *gin.Context) {
 		City:        dto.City,
 		Lat:         dto.Lat,
 		Lng:         dto.Lng,
-		OwnerID:     userID,
+		OwnerID:     ownerID,
 	}
 
 	if err := h.service.Create(facility); err != nil {
@@ -151,4 +166,223 @@ func (h *Handler) GetAvailability(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": available})
+}
+
+// GetMine returns facilities owned by the authenticated user
+func (h *Handler) GetMine(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	facilities, err := h.service.GetByOwnerID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch facilities"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"data": facilities})
+}
+
+// UpdateFacility updates a facility's properties (owner only)
+func (h *Handler) UpdateFacility(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	facilityID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid facility ID"})
+		return
+	}
+
+	var body struct {
+		Name               *string  `json:"name"`
+		Description        *string  `json:"description"`
+		Address            *string  `json:"address"`
+		City               *string  `json:"city"`
+		Type               *string  `json:"type"`
+		HourlyRate         *float64 `json:"hourly_rate"`
+		RequiresPrepayment *bool    `json:"requires_prepayment"`
+		PrepaymentCost     *float64 `json:"prepayment_cost"`
+		BankAccount        *string  `json:"bank_account"`
+		TransferTitle      *string  `json:"transfer_title"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	updates := map[string]interface{}{}
+	if body.Name != nil {
+		updates["name"] = *body.Name
+	}
+	if body.Description != nil {
+		updates["description"] = body.Description
+	}
+	if body.Address != nil {
+		updates["address"] = *body.Address
+	}
+	if body.City != nil {
+		updates["city"] = *body.City
+	}
+	if body.Type != nil {
+		updates["type"] = *body.Type
+	}
+	if body.HourlyRate != nil {
+		updates["hourly_rate"] = *body.HourlyRate
+	}
+	if body.RequiresPrepayment != nil {
+		updates["requires_prepayment"] = *body.RequiresPrepayment
+	}
+	if body.PrepaymentCost != nil {
+		updates["prepayment_cost"] = decimal.NewFromFloat(*body.PrepaymentCost)
+	}
+	if body.BankAccount != nil {
+		updates["bank_account"] = *body.BankAccount
+	}
+	if body.TransferTitle != nil {
+		updates["transfer_title"] = *body.TransferTitle
+	}
+
+	if len(updates) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update"})
+		return
+	}
+
+	userRole, _ := c.Get("role")
+	isAdmin := userRole != nil && userRole.(string) == "ADMIN"
+
+	if isAdmin {
+		if err := h.service.UpdateByAdmin(facilityID, updates); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Facility not found"})
+			return
+		}
+	} else {
+		if err := h.service.UpdateByOwner(facilityID, userID, updates); err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Facility not found or not owned by you"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Facility updated"})
+}
+
+// UpdateSlots updates opening hours for a facility (owner only)
+func (h *Handler) UpdateSlots(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	facilityID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid facility ID"})
+		return
+	}
+
+	role, _ := c.Get("role")
+	isAdmin := role != nil && role.(string) == "ADMIN"
+
+	if !isAdmin {
+		// Verify ownership
+		facilities, err := h.service.GetByOwnerID(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify ownership"})
+			return
+		}
+		owned := false
+		for _, f := range facilities {
+			if f.ID == facilityID {
+				owned = true
+				break
+			}
+		}
+		if !owned {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Facility not found or not owned by you"})
+			return
+		}
+	}
+
+	var body struct {
+		Slots []models.FacilitySlot `json:"slots" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.service.UpdateSlots(facilityID, body.Slots); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update slots"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Slots updated"})
+}
+
+// ToggleClose closes or reopens a facility (owner only)
+func (h *Handler) ToggleClose(c *gin.Context) {
+	userIDStr, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	facilityID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid facility ID"})
+		return
+	}
+
+	var body struct {
+		ClosedUntil *string `json:"closed_until"` // ISO date string, null to reopen
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var closedUntil *time.Time
+	if body.ClosedUntil != nil && *body.ClosedUntil != "" {
+		t, err := time.Parse("2006-01-02", *body.ClosedUntil)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format, use YYYY-MM-DD"})
+			return
+		}
+		closedUntil = &t
+	}
+
+	if err := h.service.SetClosed(facilityID, userID, closedUntil); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Facility not found or not owned by you"})
+		return
+	}
+
+	if closedUntil == nil {
+		c.JSON(http.StatusOK, gin.H{"message": "Facility reopened"})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "Facility closed"})
+	}
 }

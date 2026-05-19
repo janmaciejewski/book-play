@@ -13,10 +13,9 @@ import (
 
 // SeedDatabase seeds the database with initial data
 func SeedDatabase(db *gorm.DB) error {
-	// Check if already seeded
-	var count int64
-	db.Model(&models.User{}).Count(&count)
-	if count > 0 {
+	// Check if already seeded (use a seed marker: admin user with specific ID)
+	var existing models.User
+	if err := db.First(&existing, "id = ?", uuid.MustParse("00000000-0000-0000-0000-000000000001")).Error; err == nil {
 		log.Println("Database already seeded, skipping...")
 		return nil
 	}

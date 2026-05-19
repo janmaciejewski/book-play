@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/janmaciejewski/book-play/apps/api/internal/config"
@@ -92,6 +93,10 @@ func main() {
 		}
 
 		v1.GET("/facilities", facilityHandler.GetAll)
+		// Must be registered before /facilities/:id to avoid "mine" being captured as :id
+		v1.GET("/facilities/mine", middleware.JWTAuth(), func(c *gin.Context) {
+			facilityHandler.GetMine(c)
+		})
 		v1.GET("/facilities/:id", facilityHandler.GetByID)
 		v1.GET("/facilities/:id/availability", facilityHandler.GetAvailability)
 
@@ -100,11 +105,16 @@ func main() {
 		{
 			protected.GET("/auth/me", authHandler.GetMe)
 			protected.POST("/facilities", facilityHandler.Create)
+			protected.PUT("/facilities/:id", facilityHandler.UpdateFacility)
+			protected.PUT("/facilities/:id/slots", facilityHandler.UpdateSlots)
+			protected.PUT("/facilities/:id/close", facilityHandler.ToggleClose)
 
 			protected.GET("/reservations", reservationHandler.GetAll)
 			protected.GET("/reservations/:id", reservationHandler.GetByID)
 			protected.POST("/reservations", reservationHandler.Create)
 			protected.PUT("/reservations/:id/cancel", reservationHandler.Cancel)
+			protected.GET("/facilities/my/reservations", reservationHandler.GetForFacilityOwner)
+			protected.PUT("/reservations/:id/status", reservationHandler.UpdateStatus)
 
 			protected.GET("/teams", teamHandler.GetAll)
 			protected.GET("/my-teams", teamHandler.GetMyTeams)
@@ -135,6 +145,24 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	// Start the reminder scheduler as a background goroutine
+	go func() {
+		log.Println("📧 Reservation reminder scheduler started (checking every hour)")
+		// Run immediately on startup for testing
+		log.Println("Running initial reminder check...")
+		if err := mailService.ProcessReminders(); err != nil {
+			log.Printf("Warning: Initial reminder check failed: %v", err)
+		}
+		ticker := time.NewTicker(1 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			log.Println("Running scheduled reminder check...")
+			if err := mailService.ProcessReminders(); err != nil {
+				log.Printf("Warning: Reminder check failed: %v", err)
+			}
+		}
+	}()
+
 	fmt.Printf("Server starting on port %s...\n", port)
 	if err := router.Run(":" + port); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to start server: %v\n", err)

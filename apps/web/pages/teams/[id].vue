@@ -48,8 +48,8 @@
                   </div>
                 </div>
                 <div class="flex items-center gap-3">
-                  <div v-if="canManage && member.role!=='CAPTAIN'"><select :value="member.role" @change="changeRole(member,($event.target as HTMLSelectElement).value)" class="text-xs font-medium rounded px-2 py-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"><option value="ADMIN">Administrator</option><option value="MEMBER">Członek</option><option value="CAPTAIN">Kapitan (przekaż)</option></select></div>
-                  <span v-else :class="['px-2 py-1 text-xs font-medium rounded',member.role==='CAPTAIN'?'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300':member.role==='ADMIN'?'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300':'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300']">{{ getRoleLabel(member.role) }}</span>
+                  <div v-if="canManage && member.role!=='CAPTAIN'"><select :value="member.role" @change="changeRole(member,($event.target as HTMLSelectElement).value)" class="text-xs font-medium rounded px-2 py-1 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"><option value="MEMBER">Członek</option><option value="CAPTAIN">Kapitan (przekaż)</option></select></div>
+                  <span v-else :class="['px-2 py-1 text-xs font-medium rounded',member.role==='CAPTAIN'?'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300':'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300']">{{ getRoleLabel(member.role) }}</span>
                   <button v-if="canManage && member.role!=='CAPTAIN'" @click="confirmRemove(member)" class="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                 </div>
               </div>
@@ -61,7 +61,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border">
             <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Informacje</h3>
             <div class="space-y-3 text-sm">
-              <div><span class="text-gray-500 dark:text-gray-400">Twój status:</span><span :class="['ml-2 px-2 py-0.5 text-xs font-medium rounded',myMembership?.role==='CAPTAIN'?'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300':myMembership?.role==='ADMIN'?'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300':'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300']">{{ getRoleLabel(myMembership?.role||'') }}</span></div>
+              <div><span class="text-gray-500 dark:text-gray-400">Twój status:</span><span :class="['ml-2 px-2 py-0.5 text-xs font-medium rounded',myMembership?.role==='CAPTAIN'?'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300':'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300']">{{ getRoleLabel(myMembership?.role||'') }}</span></div>
               <div><span class="text-gray-500 dark:text-gray-400">Liczba członków:</span><span class="ml-2 text-gray-900 dark:text-white font-medium">{{ members.length }}</span></div>
               <div v-if="team.created_at"><span class="text-gray-500 dark:text-gray-400">Utworzono:</span><span class="ml-2 text-gray-900 dark:text-white">{{ formatDate(team.created_at) }}</span></div>
             </div>
@@ -91,7 +91,7 @@
           <div class="mb-4"><label class="block text-sm font-medium mb-1">Szukaj (email)</label><div class="relative"><input v-model="searchQuery" type="text" placeholder="Email..." class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500" @input="searchUsers" />
             <div v-if="searchResults.length>0" class="absolute z-10 mt-1 w-full bg-white dark:bg-gray-700 border rounded-md shadow-lg max-h-48 overflow-y-auto"><div v-for="user in searchResults" :key="user.id" @click="selectUser(user)" class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer flex justify-between"><div><p class="text-sm font-medium">{{ user.first_name }} {{ user.last_name }}</p><p class="text-xs text-gray-500">{{ user.email }}</p></div><svg class="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg></div></div></div></div>
           <div v-if="selectedUser" class="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border"><p class="text-sm font-medium">{{ selectedUser.first_name }} {{ selectedUser.last_name }}</p><p class="text-xs text-gray-500">{{ selectedUser.email }}</p></div>
-          <div class="mb-4"><label class="block text-sm font-medium mb-1">Rola</label><select v-model="addMemberRole" class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><option value="MEMBER">Członek</option><option value="ADMIN">Administrator</option><option value="CAPTAIN">Kapitan</option></select></div>
+          <div class="mb-4"><label class="block text-sm font-medium mb-1">Rola</label><select v-model="addMemberRole" class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white"><option value="MEMBER">Członek</option><option value="CAPTAIN">Kapitan</option></select></div>
           <div class="flex gap-2 justify-end"><button @click="showAddMemberModal=false;selectedUser=null;searchQuery=''" class="px-4 py-2 border rounded-md">Anuluj</button><button @click="addMember" :disabled="!selectedUser||addingMember" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50">{{ addingMember?'Dodawanie...':'Dodaj' }}</button></div>
         </div>
       </div>
@@ -119,7 +119,7 @@ const route=useRoute();const teamId=route.params.id as string;const authStore=us
 const { data:response,pending,error,refresh }=await useFetch<{data:Team}>(`${apiBase}/teams/${teamId}`,{headers:{Authorization:`Bearer ${useCookie('token').value||''}`}})
 const team=computed(()=>response.value?.data);const members=computed(()=>team.value?.members||[])
 const myMembership=computed(()=>{if(!currentUserId.value||!members.value)return null;return members.value.find(m=>m.user?.id===currentUserId.value)})
-const canManage=computed(()=>{const r=myMembership.value?.role;return r==='CAPTAIN'||r==='ADMIN'})
+const canManage=computed(()=>{const r=myMembership.value?.role;return r==='CAPTAIN'})
 
 const editingInfo=ref(false);const saving=ref(false);const editForm=reactive({name:'',description:''})
 function toggleEditInfo(){if(team.value){editForm.name=team.value.name;editForm.description=team.value.description||''}editingInfo.value=!editingInfo.value}
@@ -148,6 +148,6 @@ async function handleApplication(appId:string,status:string){try{const r=await f
 
 const toast=reactive({message:'',type:''})
 function showToast(m:string,t:string){toast.message=m;toast.type=t;setTimeout(()=>{toast.message=''},3000)}
-function getRoleLabel(r:string):string{const l:Record<string,string>={CAPTAIN:'Kapitan',ADMIN:'Administrator',MEMBER:'Członek'};return l[r]||r}
+function getRoleLabel(r:string):string{const l:Record<string,string>={CAPTAIN:'Kapitan',MEMBER:'Członek'};return l[r]||r}
 function formatDate(d:string):string{if(!d)return'';return new Date(d).toLocaleDateString('pl-PL',{year:'numeric',month:'long',day:'numeric'})}
 </script>

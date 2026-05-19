@@ -1,6 +1,7 @@
 package reservation
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,50 @@ func (s *Service) UpdateStatus(id uuid.UUID, status models.ReservationStatus) er
 	return s.db.Model(&models.Reservation{}).Where("id = ?", id).Update("status", status).Error
 }
 
+// GetByFacilityOwnerID returns all reservations for facilities owned by the given user
+func (s *Service) GetByFacilityOwnerID(ownerID uuid.UUID) ([]models.Reservation, error) {
+	var facilityIDs []uuid.UUID
+	s.db.Model(&models.Facility{}).Where("owner_id = ?", ownerID).Pluck("id", &facilityIDs)
+
+	if len(facilityIDs) == 0 {
+		return []models.Reservation{}, nil
+	}
+
+	var reservations []models.Reservation
+	if err := s.db.
+		Preload("Facility").
+		Preload("User").
+		Preload("Team").
+		Where("facility_id IN ?", facilityIDs).
+		Order("date DESC, start_time DESC").
+		Find(&reservations).Error; err != nil {
+		return nil, err
+	}
+	return reservations, nil
+}
+
+// UpdateReservationStatus updates status with ownership verification
+func (s *Service) UpdateReservationStatus(reservationID, ownerID uuid.UUID, status models.ReservationStatus) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		var reservation models.Reservation
+		if err := tx.First(&reservation, "id = ?", reservationID).Error; err != nil {
+			return err
+		}
+
+		// Verify the owner owns this facility
+		var facility models.Facility
+		if err := tx.First(&facility, "id = ? AND owner_id = ?", reservation.FacilityID, ownerID).Error; err != nil {
+			return errors.New("you can only manage reservations for your own facilities")
+		}
+
+		if reservation.Status != models.StatusPending {
+			return errors.New("only pending reservations can be updated")
+		}
+
+		return tx.Model(&reservation).Update("status", status).Error
+	})
+}
+
 type CreateDTO struct {
 	FacilityID string          `json:"facility_id" binding:"required"`
 	TeamID     *string         `json:"team_id"`
@@ -88,6 +133,17 @@ func (s *Service) CreateFromDTO(dto *CreateDTO, userID uuid.UUID) (*models.Reser
 	}
 
 	return reservation, nil
+}
+
+// IsUserTeamCaptain checks if the user is a captain of the given team
+func (s *Service) IsUserTeamCaptain(userID, teamID uuid.UUID) (bool, error) {
+	var count int64
+	if err := s.db.Model(&models.TeamMember{}).
+		Where("team_id = ? AND user_id = ? AND role = ?", teamID, userID, models.TeamRoleCaptain).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func parseDate(dateStr string) time.Time {

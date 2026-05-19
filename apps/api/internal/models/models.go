@@ -33,7 +33,6 @@ type TeamRole string
 
 const (
 	TeamRoleCaptain TeamRole = "CAPTAIN"
-	TeamRoleAdmin   TeamRole = "ADMIN"
 	TeamRoleMember  TeamRole = "MEMBER"
 )
 
@@ -94,22 +93,27 @@ func (r *RefreshToken) BeforeCreate(tx *gorm.DB) error {
 
 // Facility model
 type Facility struct {
-	ID          uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Name        string          `gorm:"not null;size:200" json:"name"`
-	Description *string         `gorm:"type:text" json:"description,omitempty"`
-	Type        string          `gorm:"not null;size:50" json:"type"`
-	Address     string          `gorm:"not null;size:500" json:"address"`
-	City        string          `gorm:"not null;size:100;index" json:"city"`
-	Lat         *float64        `gorm:"type:decimal(10,8)" json:"lat,omitempty"`
-	Lng         *float64        `gorm:"type:decimal(11,8)" json:"lng,omitempty"`
-	OwnerID     uuid.UUID       `gorm:"type:uuid;not null;index" json:"ownerId"`
-	Owner       User            `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
-	HourlyRate  decimal.Decimal `gorm:"type:decimal(10,2);not null" json:"hourlyRate"`
-	Amenities   *JSONB          `gorm:"type:jsonb" json:"amenities,omitempty"`
-	Images      StringArray     `gorm:"type:text[]" json:"images,omitempty"`
-	IsActive    bool            `gorm:"default:true" json:"isActive"`
-	CreatedAt   time.Time       `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt   time.Time       `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID                 uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Name               string           `gorm:"not null;size:200" json:"name"`
+	Description        *string          `gorm:"type:text" json:"description,omitempty"`
+	Type               string           `gorm:"not null;size:50" json:"type"`
+	Address            string           `gorm:"not null;size:500" json:"address"`
+	City               string           `gorm:"not null;size:100;index" json:"city"`
+	Lat                *float64         `gorm:"type:decimal(10,8)" json:"lat,omitempty"`
+	Lng                *float64         `gorm:"type:decimal(11,8)" json:"lng,omitempty"`
+	OwnerID            uuid.UUID        `gorm:"type:uuid;not null;index" json:"ownerId"`
+	Owner              User             `gorm:"foreignKey:OwnerID" json:"owner,omitempty"`
+	HourlyRate         decimal.Decimal  `gorm:"type:decimal(10,2);not null" json:"hourlyRate"`
+	Amenities          *JSONB           `gorm:"type:jsonb" json:"amenities,omitempty"`
+	Images             StringArray      `gorm:"type:text[]" json:"images,omitempty"`
+	IsActive           bool             `gorm:"default:true" json:"isActive"`
+	ClosedUntil        *time.Time       `gorm:"type:timestamp" json:"closedUntil,omitempty"`
+	RequiresPrepayment bool             `gorm:"default:false" json:"requiresPrepayment"`
+	PrepaymentCost     *decimal.Decimal `gorm:"type:decimal(10,2)" json:"prepaymentCost,omitempty"`
+	BankAccount        *string          `gorm:"size:200" json:"bankAccount,omitempty"`
+	TransferTitle      *string          `gorm:"size:200" json:"transferTitle,omitempty"`
+	CreatedAt          time.Time        `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt          time.Time        `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	Slots        []FacilitySlot `gorm:"foreignKey:FacilityID" json:"slots,omitempty"`
 	Reservations []Reservation  `gorm:"foreignKey:FacilityID" json:"reservations,omitempty"`
@@ -148,22 +152,23 @@ func (f *FacilitySlot) BeforeCreate(tx *gorm.DB) error {
 
 // Reservation model
 type Reservation struct {
-	ID         uuid.UUID         `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	FacilityID uuid.UUID         `gorm:"type:uuid;not null;uniqueIndex:facility_date_time;index" json:"facilityId"`
-	Facility   Facility          `gorm:"foreignKey:FacilityID" json:"facility,omitempty"`
-	UserID     uuid.UUID         `gorm:"type:uuid;not null;index" json:"userId"`
-	User       User              `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	TeamID     *uuid.UUID        `gorm:"type:uuid;index" json:"teamId,omitempty"`
-	Team       *Team             `gorm:"foreignKey:TeamID" json:"team,omitempty"`
-	Date       time.Time         `gorm:"type:date;not null;uniqueIndex:facility_date_time" json:"date"`
-	StartTime  string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"startTime"`
-	EndTime    string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"endTime"`
-	Status     ReservationStatus `gorm:"type:varchar(20);default:PENDING;not null" json:"status"`
-	TotalPrice decimal.Decimal   `gorm:"type:decimal(10,2);not null" json:"totalPrice"`
-	Notes      *string           `gorm:"type:text" json:"notes,omitempty"`
-	Version    int               `gorm:"default:0" json:"version"`
-	CreatedAt  time.Time         `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt  time.Time         `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID           uuid.UUID         `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	FacilityID   uuid.UUID         `gorm:"type:uuid;not null;uniqueIndex:facility_date_time;index" json:"facilityId"`
+	Facility     Facility          `gorm:"foreignKey:FacilityID" json:"facility,omitempty"`
+	UserID       uuid.UUID         `gorm:"type:uuid;not null;index" json:"userId"`
+	User         User              `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	TeamID       *uuid.UUID        `gorm:"type:uuid;index" json:"teamId,omitempty"`
+	Team         *Team             `gorm:"foreignKey:TeamID" json:"team,omitempty"`
+	Date         time.Time         `gorm:"type:date;not null;uniqueIndex:facility_date_time" json:"date"`
+	StartTime    string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"startTime"`
+	EndTime      string            `gorm:"not null;size:5;uniqueIndex:facility_date_time" json:"endTime"`
+	Status       ReservationStatus `gorm:"type:varchar(20);default:PENDING;not null" json:"status"`
+	TotalPrice   decimal.Decimal   `gorm:"type:decimal(10,2);not null" json:"totalPrice"`
+	Notes        *string           `gorm:"type:text" json:"notes,omitempty"`
+	Version      int               `gorm:"default:0" json:"version"`
+	ReminderSent bool              `gorm:"default:false" json:"-"`
+	CreatedAt    time.Time         `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt    time.Time         `gorm:"autoUpdateTime" json:"updatedAt"`
 }
 
 func (Reservation) TableName() string { return "reservations" }

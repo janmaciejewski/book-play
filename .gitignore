@@ -69,3 +69,5 @@ postgres-data/
 
 # Redis data (local dev)
 redis-data/
+
+package-lock.json

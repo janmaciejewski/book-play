@@ -46,7 +46,18 @@ func (h *Handler) GetMyTeams(c *gin.Context) {
 }
 
 func (h *Handler) GetAll(c *gin.Context) {
-	teams, err := h.service.GetAll()
+	userID, err := h.getUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	role, _ := c.Get("role")
+	roleStr := ""
+	if role != nil {
+		roleStr = role.(string)
+	}
+
+	teams, err := h.service.GetAllPublicOrUserTeams(userID, roleStr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch teams"})
 		return
@@ -60,12 +71,36 @@ func (h *Handler) GetByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
+
 	team, err := h.service.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Team not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": team})
+
+	// Visibility check: admin sees all, others need open recruitment or membership
+	role, _ := c.Get("role")
+	if role != nil && role.(string) == "ADMIN" {
+		c.JSON(http.StatusOK, gin.H{"data": team})
+		return
+	}
+
+	if team.RecruitmentOpen {
+		c.JSON(http.StatusOK, gin.H{"data": team})
+		return
+	}
+
+	userID, err := h.getUserID(c)
+	if err == nil {
+		for _, m := range team.Members {
+			if m.UserID == userID {
+				c.JSON(http.StatusOK, gin.H{"data": team})
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusForbidden, gin.H{"error": "You do not have access to this team"})
 }
 
 func (h *Handler) Create(c *gin.Context) {
@@ -94,8 +129,8 @@ func (h *Handler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain or team admin can update the team"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can update the team"})
 		return
 	}
 	var dto UpdateDTO
@@ -118,8 +153,8 @@ func (h *Handler) UploadLogo(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain or team admin can update the team logo"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can update the team logo"})
 		return
 	}
 	file, header, err := c.Request.FormFile("logo")
@@ -161,8 +196,8 @@ func (h *Handler) AddMember(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
 		return
 	}
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain or team admin can add members"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can add members"})
 		return
 	}
 	var dto AddMemberDTO
@@ -170,7 +205,7 @@ func (h *Handler) AddMember(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if dto.Role != models.TeamRoleCaptain && dto.Role != models.TeamRoleAdmin && dto.Role != models.TeamRoleMember {
+	if dto.Role != models.TeamRoleCaptain && dto.Role != models.TeamRoleMember {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
 		return
 	}
@@ -201,8 +236,8 @@ func (h *Handler) RemoveMember(c *gin.Context) {
 	}
 	isSelf, _ := h.service.IsMemberSelf(teamID, memberID, userID)
 	if !isSelf {
-		if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain or team admin can remove members"})
+		if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can remove members"})
 			return
 		}
 	}
@@ -226,8 +261,8 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid member ID"})
 		return
 	}
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain or team admin can change member roles"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the team captain can change member roles"})
 		return
 	}
 	var dto UpdateMemberRoleDTO
@@ -235,7 +270,7 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if dto.Role != models.TeamRoleCaptain && dto.Role != models.TeamRoleAdmin && dto.Role != models.TeamRoleMember {
+	if dto.Role != models.TeamRoleCaptain && dto.Role != models.TeamRoleMember {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid role"})
 		return
 	}
@@ -251,8 +286,8 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 func (h *Handler) ToggleRecruitment(c *gin.Context) {
 	userID, _ := h.getUserID(c)
 	teamID, _ := uuid.Parse(c.Param("id"))
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only captain/admin can manage recruitment"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain can manage recruitment"})
 		return
 	}
 	var body struct {
@@ -286,8 +321,8 @@ func (h *Handler) ApplyRecruitment(c *gin.Context) {
 func (h *Handler) GetApplications(c *gin.Context) {
 	userID, _ := h.getUserID(c)
 	teamID, _ := uuid.Parse(c.Param("id"))
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only captain/admin can view applications"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain can view applications"})
 		return
 	}
 	apps, _ := h.service.GetApplications(teamID)
@@ -298,8 +333,8 @@ func (h *Handler) HandleApplication(c *gin.Context) {
 	userID, _ := h.getUserID(c)
 	teamID, _ := uuid.Parse(c.Param("id"))
 	appID, _ := uuid.Parse(c.Param("appId"))
-	if ok, _ := h.service.IsUserCaptainOrAdmin(teamID, userID); !ok {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only captain/admin can handle applications"})
+	if ok, _ := h.service.IsUserCaptain(teamID, userID); !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only the captain can handle applications"})
 		return
 	}
 	var body struct {

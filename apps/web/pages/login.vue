@@ -84,7 +84,7 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(form.email, form.password)
-    router.push('/reservations')
+    router.push('/')
   } catch (e: any) {
     error.value = e.data?.error || 'Nie udało się zalogować. Sprawdź swoje dane.'
   } finally {

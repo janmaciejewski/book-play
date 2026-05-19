@@ -24,6 +24,31 @@ func (s *Service) GetAll() ([]models.Team, error) {
 	return teams, nil
 }
 
+// GetAllPublicOrUserTeams returns teams visible to the given user:
+// - All teams if user is ADMIN
+// - Teams with open recruitment OR teams the user is a member of otherwise
+func (s *Service) GetAllPublicOrUserTeams(userID uuid.UUID, role string) ([]models.Team, error) {
+	if role == "ADMIN" {
+		return s.GetAll()
+	}
+
+	var memberTeamIDs []uuid.UUID
+	s.db.Model(&models.TeamMember{}).Where("user_id = ?", userID).Pluck("team_id", &memberTeamIDs)
+
+	query := s.db.Preload("Members").Preload("Members.User")
+	if len(memberTeamIDs) > 0 {
+		query = query.Where("recruitment_open = ? OR id IN ?", true, memberTeamIDs)
+	} else {
+		query = query.Where("recruitment_open = ?", true)
+	}
+
+	var teams []models.Team
+	if err := query.Find(&teams).Error; err != nil {
+		return nil, err
+	}
+	return teams, nil
+}
+
 func (s *Service) GetByID(id uuid.UUID) (*models.Team, error) {
 	var team models.Team
 	if err := s.db.Preload("Members").Preload("Members.User").First(&team, "id = ?", id).Error; err != nil {
@@ -81,7 +106,7 @@ func (s *Service) UpdateMemberRole(teamID, memberID uuid.UUID, newRole models.Te
 			return err
 		}
 		if newRole == models.TeamRoleCaptain && member.Role != models.TeamRoleCaptain {
-			tx.Model(&models.TeamMember{}).Where("team_id = ? AND role = ?", teamID, models.TeamRoleCaptain).Update("role", models.TeamRoleAdmin)
+			tx.Model(&models.TeamMember{}).Where("team_id = ? AND role = ?", teamID, models.TeamRoleCaptain).Update("role", models.TeamRoleMember)
 			tx.Model(&models.Team{}).Where("id = ?", teamID).Update("captain_id", member.UserID)
 		}
 		return tx.Model(&member).Update("role", newRole).Error
@@ -137,10 +162,10 @@ func (s *Service) IsMemberSelf(teamID, memberID, userID uuid.UUID) (bool, error)
 	return true, nil
 }
 
-func (s *Service) IsUserCaptainOrAdmin(teamID, userID uuid.UUID) (bool, error) {
+func (s *Service) IsUserCaptain(teamID, userID uuid.UUID) (bool, error) {
 	var member models.TeamMember
-	err := s.db.Where("team_id = ? AND user_id = ? AND role IN ?",
-		teamID, userID, []models.TeamRole{models.TeamRoleCaptain, models.TeamRoleAdmin}).First(&member).Error
+	err := s.db.Where("team_id = ? AND user_id = ? AND role = ?",
+		teamID, userID, models.TeamRoleCaptain).First(&member).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return false, nil
