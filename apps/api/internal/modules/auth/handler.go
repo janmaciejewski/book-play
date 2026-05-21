@@ -126,6 +126,24 @@ func (h *Handler) VerifyOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email verified"})
 }
 
+// ResetPassword sends an OTP and then resets the password after OTP verification
+func (h *Handler) ResetPassword(c *gin.Context) {
+	var body struct {
+		Email    string `json:"email" binding:"required,email"`
+		Code     string `json:"code" binding:"required,len=6"`
+		Password string `json:"password" binding:"required,min=6"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.service.ResetPasswordWithOTP(body.Email, body.Code, body.Password); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Hasło zostało zmienione"})
+}
+
 // GetMe
 func (h *Handler) GetMe(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")

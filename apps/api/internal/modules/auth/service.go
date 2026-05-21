@@ -168,6 +168,31 @@ func (s *Service) generateTokens(user *models.User) (*AuthResponse, error) {
 }
 
 // ValidateToken validates an access token and returns the claims
+// ResetPasswordWithOTP verifies the OTP and updates the user's password
+func (s *Service) ResetPasswordWithOTP(email, code, newPassword string) error {
+	var otp models.EmailVerificationOTP
+	if err := s.db.Where("email = ? AND code = ? AND expires_at > ?", email, code, time.Now()).First(&otp).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New("invalid or expired verification code")
+		}
+		return fmt.Errorf("failed to verify OTP: %w", err)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	if err := s.db.Model(&models.User{}).Where("email = ?", email).Update("password_hash", string(hashedPassword)).Error; err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	// Delete the used OTP
+	s.db.Delete(&otp)
+
+	return nil
+}
+
 func ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	cfg := config.AppConfigInstance.JWT
 

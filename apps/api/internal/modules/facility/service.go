@@ -116,10 +116,21 @@ func (s *Service) LookupUserByEmail(email string) (*models.User, error) {
 
 // GetAvailability returns available time slots for a facility on a given date
 func (s *Service) GetAvailability(id uuid.UUID, date time.Time) ([]string, error) {
-	// Get facility to check operating hours
+	// Get facility to check operating hours and closed status
 	var facility models.Facility
 	if err := s.db.First(&facility, "id = ?", id).Error; err != nil {
 		return nil, err
+	}
+
+	// Normalize the requested date (use local timezone to match time.Now())
+	requestDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local)
+
+	// Check if facility is closed on the requested date
+	if facility.ClosedUntil != nil {
+		closedDate := time.Date(facility.ClosedUntil.Year(), facility.ClosedUntil.Month(), facility.ClosedUntil.Day(), 0, 0, 0, 0, facility.ClosedUntil.Location())
+		if !requestDate.After(closedDate) {
+			return []string{}, nil
+		}
 	}
 
 	// Get existing reservations for this date
@@ -142,12 +153,26 @@ func (s *Service) GetAvailability(id uuid.UUID, date time.Time) ([]string, error
 		bookedHours[startHour] = true
 	}
 
+	// Check if the request is for today
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	isToday := requestDate.Equal(today)
+
 	// Return available hours
 	available := []string{}
 	for _, hour := range allHours {
-		if !bookedHours[hour] {
-			available = append(available, hour)
+		if bookedHours[hour] {
+			continue
 		}
+		// For today, filter out past hours
+		if isToday {
+			hourInt := 0
+			fmt.Sscanf(hour, "%d:00", &hourInt)
+			if hourInt <= now.Hour() {
+				continue
+			}
+		}
+		available = append(available, hour)
 	}
 
 	return available, nil

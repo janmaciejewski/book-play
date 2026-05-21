@@ -90,7 +90,7 @@ func SeedDatabase(db *gorm.DB) error {
 			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000002"),
 			Name:        "Hala Sportowa OSiR",
 			Description: strPtr("Nowoczesna hala sportowa z boiskiem do koszykówki i siatkówki"),
-			Type:        "BASKETBALL",
+			Type:        "OTHER",
 			Address:     "ul. Oświatowa 8",
 			City:        "Grodzisk Wielkopolski",
 			Lat:         floatPtr(52.22680),

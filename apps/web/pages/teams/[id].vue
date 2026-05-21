@@ -26,7 +26,10 @@
               <p v-else class="mt-2 text-gray-400 dark:text-gray-500 italic">Brak opisu</p>
             </div>
           </div>
-          <NuxtLink to="/teams" class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 flex-shrink-0">&larr; Powrót do drużyn</NuxtLink>
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <button v-if="authStore.user?.role === 'ADMIN'" @click="deleteTeam" class="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">Usuń drużynę</button>
+            <NuxtLink to="/teams" class="text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300">&larr; Powrót do drużyn</NuxtLink>
+          </div>
         </div>
       </div>
 
@@ -55,13 +58,53 @@
               </div>
             </div>
           </div>
+
+          <!-- Team Chat (visible to team members AND admins) -->
+          <div v-if="myMembership || authStore.user?.role === 'ADMIN'" class="bg-white dark:bg-gray-800 rounded-lg shadow border mt-6">
+            <div class="px-6 py-4 border-b">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">Czat drużyny</h2>
+            </div>
+            <div ref="chatMessagesEl" class="px-6 py-4 h-64 overflow-y-auto space-y-3">
+              <div v-if="chatMessages.length === 0" class="text-center text-gray-500 dark:text-gray-400 py-8">
+                Brak wiadomości. Rozpocznij rozmowę!
+              </div>
+              <div v-for="msg in chatMessages" :key="msg.id" class="flex flex-col">
+                <div class="flex items-baseline gap-2">
+                  <span v-if="msg.userRole === 'ADMIN'" class="text-xs font-bold text-red-600 dark:text-red-400">ADMIN</span>
+                  <span v-else class="text-xs font-semibold text-primary-600 dark:text-primary-400">{{ msg.userName }}</span>
+                  <span class="text-xs text-gray-400 dark:text-gray-500">{{ formatChatTime(msg.createdAt) }}</span>
+                </div>
+                <p class="text-sm text-gray-900 dark:text-white mt-0.5">{{ msg.text }}</p>
+              </div>
+            </div>
+            <div class="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+              <input
+                v-model="newMessage"
+                type="text"
+                class="flex-1 rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 text-sm"
+                placeholder="Napisz wiadomość..."
+                @keyup.enter="sendChatMessage"
+              />
+              <button
+                @click="sendChatMessage"
+                :disabled="!newMessage.trim() || sendingChat"
+                class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 text-sm"
+              >
+                {{ sendingChat ? '...' : 'Wyślij' }}
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-6">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border">
             <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Informacje</h3>
             <div class="space-y-3 text-sm">
-              <div><span class="text-gray-500 dark:text-gray-400">Twój status:</span><span :class="['ml-2 px-2 py-0.5 text-xs font-medium rounded',myMembership?.role==='CAPTAIN'?'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300':'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300']">{{ getRoleLabel(myMembership?.role||'') }}</span></div>
+              <div><span class="text-gray-500 dark:text-gray-400">Twój status:</span>
+                <span v-if="authStore.user?.role === 'ADMIN'" class="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">Administrator</span>
+                <span v-else-if="myMembership?.role==='CAPTAIN'" class="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">{{ getRoleLabel(myMembership?.role||'') }}</span>
+                <span v-else class="ml-2 px-2 py-0.5 text-xs font-medium rounded bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">{{ getRoleLabel(myMembership?.role||'') }}</span>
+              </div>
               <div><span class="text-gray-500 dark:text-gray-400">Liczba członków:</span><span class="ml-2 text-gray-900 dark:text-white font-medium">{{ members.length }}</span></div>
               <div v-if="team.created_at"><span class="text-gray-500 dark:text-gray-400">Utworzono:</span><span class="ml-2 text-gray-900 dark:text-white">{{ formatDate(team.created_at) }}</span></div>
             </div>
@@ -140,11 +183,124 @@ function confirmRemove(m:Member){memberToRemove.value=m;showRemoveConfirm.value=
 async function removeMember(){if(!memberToRemove.value)return;removingMember.value=true;try{const r=await fetch(`${apiBase}/teams/${teamId}/members/${memberToRemove.value.id}`,{method:'DELETE',headers:{Authorization:`Bearer ${useCookie('token').value||''}`}});if(r.ok){showToast('Usunięto','success');showRemoveConfirm.value=false;memberToRemove.value=null;refresh()}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}removingMember.value=false}
 async function changeRole(member:Member,newRole:string){if(newRole==='CAPTAIN'&&!confirm('Przekazać kapitana?'))return;try{const r=await fetch(`${apiBase}/teams/${teamId}/members/${member.id}/role`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${useCookie('token').value||''}`},body:JSON.stringify({role:newRole})});if(r.ok){showToast('Rola zmieniona','success');refresh()}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}}
 async function leaveTeam(){if(!myMembership.value)return;if(!confirm('Opuścić drużynę?'))return;try{const r=await fetch(`${apiBase}/teams/${teamId}/members/${myMembership.value.id}`,{method:'DELETE',headers:{Authorization:`Bearer ${useCookie('token').value||''}`}});if(r.ok){showToast('Opuściłeś drużynę','success');navigateTo('/teams')}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}}
+async function deleteTeam(){if(!confirm('Czy na pewno chcesz usunąć tę drużynę? Tej operacji nie można cofnąć.'))return;try{const r=await fetch(`${apiBase}/teams/${teamId}`,{method:'DELETE',headers:{Authorization:`Bearer ${useCookie('token').value||''}`}});if(r.ok){showToast('Drużyna usunięta','success');navigateTo('/teams')}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}}
 
 const togglingRecruitment=ref(false);const showApplications=ref(false);const applications=ref<Application[]>([])
 async function toggleRecruitment(){togglingRecruitment.value=true;try{const ns=!team.value?.recruitment_open;const r=await fetch(`${apiBase}/teams/${teamId}/recruitment`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${useCookie('token').value||''}`},body:JSON.stringify({open:ns})});if(r.ok){showToast(ns?'Otwarta':'Zamknięta','success');refresh()}}catch{showToast('Błąd','error')}togglingRecruitment.value=false}
 async function loadApplications(){showApplications.value=true;try{const r=await fetch(`${apiBase}/teams/${teamId}/applications`,{headers:{Authorization:`Bearer ${useCookie('token').value||''}`}});if(r.ok){const d:{data:Application[]}=await r.json();applications.value=d.data||[]}}catch{}}
 async function handleApplication(appId:string,status:string){try{const r=await fetch(`${apiBase}/teams/${teamId}/applications/${appId}`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${useCookie('token').value||''}`},body:JSON.stringify({status})});if(r.ok){showToast(status==='ACCEPTED'?'Zaakceptowano':'Odrzucono','success');loadApplications();refresh()}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}}
+
+// Chat state
+interface ChatMessage { id:string;teamId:string;userId:string;userName:string;text:string;createdAt:string }
+const chatMessages=ref<ChatMessage[]>([])
+const newMessage=ref('')
+const sendingChat=ref(false)
+const chatMessagesEl=ref<HTMLElement|null>(null)
+let chatIsPolling = false
+
+function scheduleChatPoll() {
+  if (!chatIsPolling) return
+  setTimeout(async () => {
+    if (!chatIsPolling) return
+    const token = useCookie('token').value || ''
+    try {
+      const r = await fetch(`${apiBase}/teams/${teamId}/chat`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (r.ok) {
+        const d = await r.json()
+        if (d?.data && Array.isArray(d.data)) {
+          chatMessages.value = d.data
+          setTimeout(() => {
+            if (chatMessagesEl.value) {
+              chatMessagesEl.value.scrollTop = chatMessagesEl.value.scrollHeight
+            }
+          }, 50)
+        }
+      }
+    } catch {}
+    scheduleChatPoll()
+  }, 5000)
+}
+
+async function fetchChatMessages() {
+  const token = useCookie('token').value || ''
+  try {
+    const r = await fetch(`${apiBase}/teams/${teamId}/chat`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    if (r.ok) {
+      const d = await r.json()
+      if (d?.data && Array.isArray(d.data)) {
+        chatMessages.value = d.data
+        setTimeout(() => {
+          if (chatMessagesEl.value) {
+            chatMessagesEl.value.scrollTop = chatMessagesEl.value.scrollHeight
+          }
+        }, 50)
+      }
+    }
+  } catch {}
+}
+
+const isAdminViewing = computed(() => authStore.user?.role === 'ADMIN')
+
+// Start/stop polling based on membership (or admin)
+watch([myMembership, isAdminViewing], ([member, isAdmin]) => {
+  if (member || isAdmin) {
+    chatIsPolling = true
+    fetchChatMessages() // immediate first fetch
+    scheduleChatPoll()
+  } else {
+    chatIsPolling = false
+    chatMessages.value = []
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  chatIsPolling = false
+})
+
+async function sendChatMessage() {
+  if (!newMessage.value.trim()) return
+  sendingChat.value = true
+  try {
+    const token = useCookie('token').value || ''
+    const userName = [authStore.user?.first_name, authStore.user?.last_name].filter(Boolean).join(' ') || authStore.user?.email || ''
+    const r = await fetch(`${apiBase}/teams/${teamId}/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ text: newMessage.value.trim(), user_name: userName })
+    })
+    if (r.ok) {
+      newMessage.value = ''
+      // Force immediate fetch after send
+      const fr = await fetch(`${apiBase}/teams/${teamId}/chat`, {
+        headers: { Authorization: `Bearer ${useCookie('token').value}` }
+      })
+      if (fr.ok) {
+        const d = await fr.json()
+        if (d?.data) {
+          chatMessages.value = d.data
+          setTimeout(() => {
+            if (chatMessagesEl.value) {
+              chatMessagesEl.value.scrollTop = chatMessagesEl.value.scrollHeight
+            }
+          }, 50)
+        }
+      }
+    }
+  } catch {}
+  sendingChat.value = false
+}
+
+function formatChatTime(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+}
 
 const toast=reactive({message:'',type:''})
 function showToast(m:string,t:string){toast.message=m;toast.type=t;setTimeout(()=>{toast.message=''},3000)}

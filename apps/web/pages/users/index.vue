@@ -1,7 +1,8 @@
 <template>
   <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Użytkownicy</h1>
+      <NuxtLink to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-1">Użytkownicy</h1>
       <p class="mt-2 text-gray-600 dark:text-gray-400">Zarządzaj użytkownikami systemu</p>
     </div>
 

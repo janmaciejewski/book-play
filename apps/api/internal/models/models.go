@@ -108,6 +108,7 @@ type Facility struct {
 	Images             StringArray      `gorm:"type:text[]" json:"images,omitempty"`
 	IsActive           bool             `gorm:"default:true" json:"isActive"`
 	ClosedUntil        *time.Time       `gorm:"type:timestamp" json:"closedUntil,omitempty"`
+	BookingMode        string           `gorm:"type:varchar(20);default:BOTH;not null" json:"bookingMode"`
 	RequiresPrepayment bool             `gorm:"default:false" json:"requiresPrepayment"`
 	PrepaymentCost     *decimal.Decimal `gorm:"type:decimal(10,2)" json:"prepaymentCost,omitempty"`
 	BankAccount        *string          `gorm:"size:200" json:"bankAccount,omitempty"`

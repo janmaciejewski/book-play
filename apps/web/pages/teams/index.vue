@@ -2,7 +2,8 @@
   <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
     <div class="mb-8 flex items-center justify-between flex-wrap gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        <NuxtLink v-if="authStore.user?.role === 'ADMIN'" to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white" :class="{ 'mt-1': authStore.user?.role === 'ADMIN' }">
           {{ showMyTeams ? 'Moje drużyny' : 'Wszystkie drużyny' }}
         </h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">

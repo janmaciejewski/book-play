@@ -110,6 +110,18 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
+	// Check facility booking mode
+	facilityID, err := uuid.Parse(dto.FacilityID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid facility ID"})
+		return
+	}
+	isTeamReservation := dto.TeamID != nil && *dto.TeamID != ""
+	if err := h.service.CheckBookingMode(facilityID, isTeamReservation); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	// If team_id is provided, verify user is the team captain
 	if dto.TeamID != nil && *dto.TeamID != "" {
 		teamID, err := uuid.Parse(*dto.TeamID)

@@ -4,58 +4,35 @@
       <nav class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 justify-between">
           <div class="flex">
-            <NuxtLink to="/" class="flex flex-shrink-0 items-center">
+            <NuxtLink to="/" class="flex flex-shrink-0 items-center gap-2">
+              <img src="/favicon.png" alt="BookPlay" class="h-16 w-16" />
               <span class="text-2xl font-bold text-primary-600">BookPlay</span>
             </NuxtLink>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <NuxtLink
-                  v-if="authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
+              <!-- Regular authenticated users (non-admin, non-owner) -->
+              <template v-if="authStore.isAuthenticated && authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'">
+                <NuxtLink
                   to="/facilities"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                Obiekty
-              </NuxtLink>
+                >
+                  Obiekty
+                </NuxtLink>
                 <NuxtLink
-                  v-if="authStore.isAuthenticated && authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
                   to="/reservations"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                Moje rezerwacje
-              </NuxtLink>
+                >
+                  Moje rezerwacje
+                </NuxtLink>
                 <NuxtLink
-                  v-if="authStore.isAuthenticated && authStore.user?.role !== 'FACILITY_OWNER' && authStore.user?.role !== 'ADMIN'"
                   to="/teams"
                   class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
                   active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                Drużyny
-              </NuxtLink>
-                <NuxtLink
-                  v-if="authStore.user?.role === 'FACILITY_OWNER' || authStore.user?.role === 'ADMIN'"
-                  to="/facilities/owner"
-                  class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
-                  active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                {{ authStore.user?.role === 'ADMIN' ? 'Obiekty' : 'Moje obiekty' }}
-              </NuxtLink>
-                <NuxtLink
-                  v-if="authStore.user?.role === 'FACILITY_OWNER' || authStore.user?.role === 'ADMIN'"
-                  to="/facilities/my-reservations"
-                  class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
-                  active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                {{ authStore.user?.role === 'ADMIN' ? 'Rezerwacje' : 'Rezerwacje' }}
-              </NuxtLink>
-                <NuxtLink
-                  v-if="authStore.user?.role === 'ADMIN'"
-                  to="/users"
-                  class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400"
-                  active-class="border-b-2 border-primary-500 text-gray-900 dark:text-white"
-              >
-                Użytkownicy
-              </NuxtLink>
+                >
+                  Drużyny
+                </NuxtLink>
+              </template>
             </div>
           </div>
           <div class="flex items-center gap-3">

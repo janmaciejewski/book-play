@@ -136,6 +136,30 @@ func (s *Service) CreateFromDTO(dto *CreateDTO, userID uuid.UUID) (*models.Reser
 }
 
 // IsUserTeamCaptain checks if the user is a captain of the given team
+func (s *Service) CheckBookingMode(facilityID uuid.UUID, isTeamReservation bool) error {
+	var facility struct {
+		BookingMode string
+	}
+	if err := s.db.Model(&models.Facility{}).Where("id = ?", facilityID).Select("booking_mode").Scan(&facility).Error; err != nil {
+		return errors.New("facility not found")
+	}
+
+	switch facility.BookingMode {
+	case "INDIVIDUAL":
+		if isTeamReservation {
+			return errors.New("ten obiekt przyjmuje tylko rezerwacje indywidualne")
+		}
+	case "TEAM":
+		if !isTeamReservation {
+			return errors.New("ten obiekt przyjmuje tylko rezerwacje drużynowe")
+		}
+	default:
+		// "BOTH" or empty — allow anything
+	}
+
+	return nil
+}
+
 func (s *Service) IsUserTeamCaptain(userID, teamID uuid.UUID) (bool, error) {
 	var count int64
 	if err := s.db.Model(&models.TeamMember{}).
