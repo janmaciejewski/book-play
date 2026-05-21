@@ -2,7 +2,8 @@
   <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
     <div class="mb-8 flex items-start justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Obiekty</h1>
+        <NuxtLink v-if="authStore.user?.role === 'ADMIN' || authStore.user?.role === 'FACILITY_OWNER'" to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white" :class="{ 'mt-1': authStore.user?.role === 'ADMIN' || authStore.user?.role === 'FACILITY_OWNER' }">Obiekty</h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">Przeglądaj i rezerwuj obiekty sportowe w swojej okolicy</p>
       </div>
       <button
@@ -115,6 +116,7 @@
 <script setup lang="ts">
 // No auth required for viewing facilities
 
+const authStore = useAuthStore()
 const search = ref('')
 const typeFilter = ref('')
 const cityFilter = ref('')
@@ -160,9 +162,9 @@ const getTypeImage = (type: string): string => {
     TENNIS: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
     VOLLEYBALL: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop',
     SWIMMING: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&h=600&fit=crop',
-    OTHER: 'https://images.unsplash.com/photo-1461896836934-ffe2070f2cf4?w=800&h=600&fit=crop'
+    OTHER: 'https://images.unsplash.com/photo-1770064319607-f869d94d4ec3?w=800&h=600&fit=crop'
   }
-  return images[type] || 'https://images.unsplash.com/photo-1461896836934-ffe2070f2cf4?w=800&h=600&fit=crop'
+  return images[type] || 'https://images.unsplash.com/photo-1770064319607-f869d94d4ec3?w=800&h=600&fit=crop'
 }
 
 const getTypeName = (type: string): string => {

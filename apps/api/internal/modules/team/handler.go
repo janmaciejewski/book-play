@@ -351,6 +351,24 @@ func (h *Handler) HandleApplication(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Application " + body.Status})
 }
 
+func (h *Handler) DeleteTeam(c *gin.Context) {
+	userRole, _ := c.Get("role")
+	if userRole != models.RoleAdmin && userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can delete teams"})
+		return
+	}
+	teamID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team ID"})
+		return
+	}
+	if err := h.service.DeleteTeam(teamID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete team"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Team deleted"})
+}
+
 func (h *Handler) SearchUsers(c *gin.Context) {
 	teamID, _ := uuid.Parse(c.Param("id"))
 	query := c.Query("q")

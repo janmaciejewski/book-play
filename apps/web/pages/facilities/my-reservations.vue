@@ -1,7 +1,8 @@
 <template>
   <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Rezerwacje na moje obiekty</h1>
+      <NuxtLink to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+      <h1 class="page-title mt-1">Rezerwacje na moje obiekty</h1>
       <p class="page-subtitle">
         Zarządzaj rezerwacjami dla swoich obiektów sportowych
       </p>

@@ -11,6 +11,7 @@ import (
 	"github.com/janmaciejewski/book-play/apps/api/internal/middleware"
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/auth"
+	"github.com/janmaciejewski/book-play/apps/api/internal/modules/chat"
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/facility"
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/mail"
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/reservation"
@@ -65,6 +66,13 @@ func main() {
 	userService := user.NewService(db)
 	userHandler := user.NewHandler(userService)
 
+	var chatService *chat.Service
+	var chatHandler *chat.Handler
+	if config.RedisClient != nil {
+		chatService = chat.NewService(config.RedisClient)
+		chatHandler = chat.NewHandler(chatService)
+	}
+
 	if cfg.App.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -90,6 +98,7 @@ func main() {
 			authGroup.POST("/logout", authHandler.Logout)
 			authGroup.POST("/send-otp", authHandler.SendOTP)
 			authGroup.POST("/verify-otp", authHandler.VerifyOTP)
+			authGroup.POST("/reset-password", authHandler.ResetPassword)
 		}
 
 		v1.GET("/facilities", facilityHandler.GetAll)
@@ -130,12 +139,20 @@ func main() {
 			protected.POST("/teams/:id/apply", teamHandler.ApplyRecruitment)
 			protected.GET("/teams/:id/applications", teamHandler.GetApplications)
 			protected.PUT("/teams/:id/applications/:appId", teamHandler.HandleApplication)
+			protected.DELETE("/teams/:id", teamHandler.DeleteTeam)
 
 			protected.GET("/users", userHandler.GetAll)
 			protected.GET("/users/:id", userHandler.GetProfile)
 			protected.PUT("/users/:id", userHandler.UpdateProfile)
 			protected.PUT("/users/:id/role", userHandler.UpdateRole)
+			protected.POST("/users/:id/avatar", userHandler.UploadAvatar)
 			protected.DELETE("/users/:id", userHandler.Delete)
+
+			// Chat routes (only if Redis is available)
+			if chatHandler != nil {
+				protected.GET("/teams/:id/chat", chatHandler.GetMessages)
+				protected.POST("/teams/:id/chat", chatHandler.SendMessage)
+			}
 		}
 	}
 

@@ -2,7 +2,8 @@
   <div class="page-container">
     <div class="section-header mb-8">
       <div>
-        <h1 class="page-title">
+        <NuxtLink to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+        <h1 class="page-title mt-1">
           {{ isAdmin ? 'Obiekty' : 'Moje obiekty' }}
         </h1>
         <p class="page-subtitle">
@@ -151,6 +152,15 @@
               <label class="form-label">Cena za godzinę (PLN)</label>
               <input v-model.number="editForm.hourlyRate" type="number" step="0.01" min="0" class="form-input" />
             </div>
+          </div>
+          <!-- Booking Mode -->
+          <div>
+            <label class="form-label">Tryb rezerwacji</label>
+            <select v-model="editForm.bookingMode" class="form-select">
+              <option value="BOTH">Indywidualnie i drużynowo</option>
+              <option value="INDIVIDUAL">Tylko indywidualnie</option>
+              <option value="TEAM">Tylko drużynowo</option>
+            </select>
           </div>
           <button @click="saveInfo" :disabled="saving" class="btn-primary-sm">
             {{ saving ? 'Zapisywanie...' : 'Zapisz zmiany' }}
@@ -384,6 +394,7 @@ function openEdit(fac: any) {
   editForm.city = fac.city
   editForm.type = fac.type
   editForm.hourlyRate = fac.hourlyRate
+  editForm.bookingMode = fac.bookingMode || 'BOTH'
   editForm.requiresPrepayment = fac.requiresPrepayment || false
   editForm.prepaymentCost = typeof fac.prepaymentCost === 'string' ? parseFloat(fac.prepaymentCost) : (fac.prepaymentCost || 0)
   editForm.bankAccount = fac.bankAccount || ''
@@ -419,6 +430,7 @@ async function saveInfo() {
           type: editForm.type,
         } : {}),
         description: editForm.description || null,
+        booking_mode: editForm.bookingMode,
         hourly_rate: editForm.hourlyRate,
         requires_prepayment: editForm.requiresPrepayment,
         prepayment_cost: editForm.requiresPrepayment ? parseFloat(String(editForm.prepaymentCost)) || 0 : null,

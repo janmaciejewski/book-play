@@ -1,6 +1,11 @@
 package user
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/janmaciejewski/book-play/apps/api/internal/models"
 	"gorm.io/gorm"
@@ -32,6 +37,23 @@ func (s *Service) UpdateRole(id uuid.UUID, role string) error {
 
 func (s *Service) Delete(id uuid.UUID) error {
 	return s.db.Delete(&models.User{}, "id = ?", id).Error
+}
+
+func (s *Service) SaveAvatar(userID uuid.UUID, fileData []byte, extension string) (string, error) {
+	uploadsDir := "uploads/avatars"
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create upload directory: %w", err)
+	}
+	filename := fmt.Sprintf("%s_%d%s", userID.String(), time.Now().Unix(), extension)
+	filePath := filepath.Join(uploadsDir, filename)
+	if err := os.WriteFile(filePath, fileData, 0644); err != nil {
+		return "", fmt.Errorf("failed to write avatar file: %w", err)
+	}
+	avatarPath := "/" + filePath
+	if err := s.db.Model(&models.User{}).Where("id = ?", userID).Update("avatar", avatarPath).Error; err != nil {
+		return "", fmt.Errorf("failed to update avatar on user: %w", err)
+	}
+	return avatarPath, nil
 }
 
 type UpdateProfileDTO struct {

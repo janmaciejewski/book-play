@@ -23,6 +23,9 @@
         <span :class="getTypeBadgeClasses(facility.type)" class="inline-block mt-2 px-3 py-1 rounded-full text-sm border">
           {{ getTypeLabel(facility.type) }}
         </span>
+        <div v-if="isFacilityClosed" class="mt-2 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-2 text-sm text-red-800 dark:text-red-300">
+          ⚠ Obiekt zamknięty{{ facility.closedUntil ? ' do ' + formatClosedDate(facility.closedUntil) : '' }}
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -46,7 +49,11 @@
           </div>
 
           <!-- Calendar -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <div v-if="isFacilityClosed" class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Wybierz termin</h2>
+            <p class="text-gray-500 dark:text-gray-400 py-4 text-center">Ten obiekt jest obecnie zamknięty. Rezerwacje nie są dostępne.</p>
+          </div>
+          <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
             <h2 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Wybierz termin</h2>
             
             <!-- Date Selection -->
@@ -124,18 +131,25 @@
                 </select>
               </div>
 
-              <!-- Team Selection (optional) -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Drużyna (opcjonalnie)</label>
+              <!-- Team Selection -->
+              <div v-if="facility?.bookingMode !== 'INDIVIDUAL'">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Drużyna
+                  <span v-if="facility?.bookingMode === 'TEAM'" class="text-red-500">(wymagane)</span>
+                  <span v-else class="text-gray-400">(opcjonalnie)</span>
+                </label>
                 <select
                   v-model="selectedTeam"
                   class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500"
                 >
-                  <option value="">Indywidualnie</option>
+                  <option v-if="facility?.bookingMode !== 'TEAM'" value="">Indywidualnie</option>
                   <option v-for="team in teams" :key="team.id" :value="team.id">
                     {{ team.name }}
                   </option>
                 </select>
+              </div>
+              <div v-else class="text-sm text-gray-500 dark:text-gray-400 mb-4 py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                Ten obiekt przyjmuje tylko rezerwacje indywidualne.
               </div>
 
               <!-- Prepayment Warning -->
@@ -187,6 +201,7 @@ interface Facility {
   address: string
   city: string
   hourlyRate: number | string
+  closedUntil?: string
   requiresPrepayment?: boolean
   prepaymentCost?: number | string
   bankAccount?: string
@@ -201,15 +216,22 @@ interface AvailabilityResponse {
   data: string[]
 }
 
+interface TeamMember {
+  user_id: string
+  role: string
+}
+
 interface Team {
   id: string
   name: string
+  members?: TeamMember[]
 }
 
 interface TeamsResponse {
   data: Team[]
 }
 
+const authStore = useAuthStore()
 const route = useRoute()
 const facilityId = route.params.id as string
 
@@ -226,7 +248,11 @@ const { data: myTeamsResponse } = await useFetch<MyTeamResponse>('http://localho
 })
 const teams = computed(() => {
   const raw = myTeamsResponse.value?.data || []
-  return raw.filter((t: any) => t.userRole === 'CAPTAIN')
+  const currentUserId = authStore.user?.id
+  return raw.filter((t: any) => {
+    const member = t.members?.find((m: any) => m.user_id === currentUserId)
+    return member?.role === 'CAPTAIN'
+  })
 })
 
 // Booking state
@@ -268,6 +294,22 @@ watch(selectedDate, async (newDate) => {
     availabilityPending.value = false
   }
 })
+
+// Check if facility is closed
+const isFacilityClosed = computed(() => {
+  if (!facility.value?.closedUntil) return false
+  const closed = new Date(facility.value.closedUntil)
+  const now = new Date()
+  return closed > now
+})
+
+function formatClosedDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('pl-PL', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
 
 // Calculate total price
 const totalPrice = computed(() => {

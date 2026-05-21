@@ -215,6 +215,7 @@ func (h *Handler) UpdateFacility(c *gin.Context) {
 		City               *string  `json:"city"`
 		Type               *string  `json:"type"`
 		HourlyRate         *float64 `json:"hourly_rate"`
+		BookingMode        *string  `json:"booking_mode"`
 		RequiresPrepayment *bool    `json:"requires_prepayment"`
 		PrepaymentCost     *float64 `json:"prepayment_cost"`
 		BankAccount        *string  `json:"bank_account"`
@@ -243,6 +244,14 @@ func (h *Handler) UpdateFacility(c *gin.Context) {
 	}
 	if body.HourlyRate != nil {
 		updates["hourly_rate"] = *body.HourlyRate
+	}
+	if body.BookingMode != nil {
+		validModes := map[string]bool{"INDIVIDUAL": true, "TEAM": true, "BOTH": true}
+		if !validModes[*body.BookingMode] {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "booking_mode must be INDIVIDUAL, TEAM, or BOTH"})
+			return
+		}
+		updates["booking_mode"] = *body.BookingMode
 	}
 	if body.RequiresPrepayment != nil {
 		updates["requires_prepayment"] = *body.RequiresPrepayment

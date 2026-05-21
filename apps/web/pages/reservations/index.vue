@@ -1,7 +1,8 @@
 <template>
   <div class="px-4 md:px-6 lg:px-8 mx-auto max-w-7xl py-8">
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Moje rezerwacje</h1>
+      <NuxtLink v-if="authStore.user?.role === 'ADMIN' || authStore.user?.role === 'FACILITY_OWNER'" to="/" class="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm">&larr; Powrót do panelu</NuxtLink>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white" :class="{ 'mt-1': authStore.user?.role === 'ADMIN' || authStore.user?.role === 'FACILITY_OWNER' }">{{ authStore.user?.role === 'ADMIN' ? 'Wszystkie rezerwacje' : 'Moje rezerwacje' }}</h1>
       <p class="mt-2 text-gray-600 dark:text-gray-400">Przeglądaj i zarządzaj swoimi rezerwacjami</p>
     </div>
 
@@ -86,6 +87,8 @@
 definePageMeta({
   middleware: 'auth'
 })
+
+const authStore = useAuthStore()
 
 interface Reservation {
   id: string

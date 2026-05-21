@@ -137,6 +137,24 @@ func (s *Service) UpdateLogo(teamID uuid.UUID, logoPath string) error {
 	return s.db.Model(&models.Team{}).Where("id = ?", teamID).Update("logo", logoPath).Error
 }
 
+func (s *Service) DeleteTeam(teamID uuid.UUID) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		// Delete all team members
+		if err := tx.Where("team_id = ?", teamID).Delete(&models.TeamMember{}).Error; err != nil {
+			return err
+		}
+		// Delete recruitment applications
+		if err := tx.Where("team_id = ?", teamID).Delete(&models.TeamRecruitmentApplication{}).Error; err != nil {
+			return err
+		}
+		// Delete the team
+		if err := tx.Delete(&models.Team{}, "id = ?", teamID).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func (s *Service) SaveLogo(teamID uuid.UUID, fileData []byte, extension string) (string, error) {
 	uploadsDir := "uploads/teams"
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
