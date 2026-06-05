@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-// No auth required for viewing facilities
+// Przeglądanie obiektów nie wymaga logowania
 
 const authStore = useAuthStore()
 const search = ref('')
@@ -137,7 +137,7 @@ interface FacilitiesResponse {
   data: Facility[]
 }
 
-// Build URL with query parameters
+// Buduje URL z parametrami filtrowania
 const apiUrl = computed(() => {
   const params = new URLSearchParams()
   if (typeFilter.value) params.append('type', typeFilter.value)
@@ -195,7 +195,7 @@ const searchFacilities = () => {
   refresh()
 }
 
-// Watch for filter changes
+// Reaguje na zmiany filtrów – odświeża listę
 watch([typeFilter, cityFilter], () => {
   refresh()
 })

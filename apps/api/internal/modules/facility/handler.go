@@ -18,13 +18,6 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// GetAll godoc
-// @Summary Get all facilities
-// @Description Get list of all facilities
-// @Tags facilities
-// @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
-// @Router /facilities [get]
 func (h *Handler) GetAll(c *gin.Context) {
 	filterType := c.Query("type")
 	filterCity := c.Query("city")
@@ -38,15 +31,6 @@ func (h *Handler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": facilities})
 }
 
-// GetByID godoc
-// @Summary Get facility by ID
-// @Description Get single facility details
-// @Tags facilities
-// @Security BearerAuth
-// @Param id path string true "Facility ID"
-// @Success 200 {object} map[string]interface{}
-// @Failure 404 {object} map[string]string
-// @Router /facilities/{id} [get]
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -63,7 +47,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": facility})
 }
 
-// CreateDTO for creating a facility
+// CreateDTO – dane do utworzenia nowego obiektu
 type CreateDTO struct {
 	Name        string   `json:"name" binding:"required"`
 	Description *string  `json:"description"`
@@ -76,18 +60,10 @@ type CreateDTO struct {
 	OwnerEmail  *string  `json:"owner_email"`
 }
 
-// Create godoc
-// @Summary Create a new facility
-// @Description Create a new facility (facility owners only)
-// @Tags facilities
-// @Security BearerAuth
-// @Param request body CreateDTO true "Facility data"
-// @Success 201 {object} map[string]interface{}
-// @Router /facilities [post]
 func (h *Handler) Create(c *gin.Context) {
 	userIDStr, _ := c.Get("userID")
 
-	// Parse userID from string to uuid.UUID
+	// Konwertuje ID użytkownika z stringa na UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
@@ -102,7 +78,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	ownerID := userID
 
-	// Admin can create facilities for other owners
+	// Admin może tworzyć obiekty dla innych właścicieli
 	userRole, _ := c.Get("role")
 	if userRole != nil && userRole.(string) == "ADMIN" && dto.OwnerEmail != nil && *dto.OwnerEmail != "" {
 		ownerUser, err := h.service.LookupUserByEmail(*dto.OwnerEmail)
@@ -132,14 +108,6 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": facility})
 }
 
-// GetAvailability godoc
-// @Summary Get facility availability
-// @Description Get available time slots for a facility on a given date
-// @Tags facilities
-// @Param id path string true "Facility ID"
-// @Param date query string true "Date (YYYY-MM-DD)"
-// @Success 200 {object} map[string]interface{}
-// @Router /facilities/{id}/availability [get]
 func (h *Handler) GetAvailability(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -168,7 +136,7 @@ func (h *Handler) GetAvailability(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": available})
 }
 
-// GetMine returns facilities owned by the authenticated user
+// GetMine – zwraca obiekty należące do zalogowanego użytkownika
 func (h *Handler) GetMine(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -189,7 +157,7 @@ func (h *Handler) GetMine(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": facilities})
 }
 
-// UpdateFacility updates a facility's properties (owner only)
+// UpdateFacility – aktualizuje dane obiektu (tylko właściciel)
 func (h *Handler) UpdateFacility(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -289,7 +257,7 @@ func (h *Handler) UpdateFacility(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Facility updated"})
 }
 
-// UpdateSlots updates opening hours for a facility (owner only)
+// UpdateSlots – aktualizuje godziny otwarcia obiektu (tylko właściciel)
 func (h *Handler) UpdateSlots(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -312,7 +280,7 @@ func (h *Handler) UpdateSlots(c *gin.Context) {
 	isAdmin := role != nil && role.(string) == "ADMIN"
 
 	if !isAdmin {
-		// Verify ownership
+		// Weryfikuje czy użytkownik jest właścicielem obiektu
 		facilities, err := h.service.GetByOwnerID(userID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify ownership"})
@@ -347,7 +315,7 @@ func (h *Handler) UpdateSlots(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Slots updated"})
 }
 
-// ToggleClose closes or reopens a facility (owner only)
+// ToggleClose – zamyka lub otwiera ponownie obiekt (tylko właściciel)
 func (h *Handler) ToggleClose(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -367,7 +335,7 @@ func (h *Handler) ToggleClose(c *gin.Context) {
 	}
 
 	var body struct {
-		ClosedUntil *string `json:"closed_until"` // ISO date string, null to reopen
+		ClosedUntil *string `json:"closed_until"`
 	}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

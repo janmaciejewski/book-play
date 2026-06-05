@@ -136,7 +136,7 @@ const cancelReservation = async (id: string) => {
         Authorization: `Bearer ${useCookie('token').value || ''}`
       }
     })
-    // Update local state
+    // Aktualizuje stan lokalny po anulowaniu
     const index = reservations.value.findIndex(r => r.id === id)
     if (index !== -1) {
       reservations.value[index].status = 'CANCELLED'

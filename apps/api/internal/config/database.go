@@ -31,7 +31,7 @@ func InitDatabase(cfg *DatabaseConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to get database instance: %w", err)
 	}
 
-	// Set connection pool settings
+	// Ustawia limity puli połączeń do bazy danych
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 

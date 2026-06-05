@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// CORS middleware handles Cross-Origin Resource Sharing
+// Middleware CORS umożliwia zapytania z innych domen (cross-origin)
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -23,16 +23,15 @@ func CORS() gin.HandlerFunc {
 	}
 }
 
-// RateLimit middleware implements basic rate limiting
+// Middleware RateLimit ogranicza liczbę zapytań na minutę
 func RateLimit(requestsPerMinute int) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Simple in-memory rate limiting
-		// In production, use Redis-based rate limiting
+		// Prosty limit w pamięci – w produkcji zastąpić Redisem
 		c.Next()
 	}
 }
 
-// Logger middleware logs request details
+// Middleware Logger rejestruje szczegóły błędnych zapytań
 func Logger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()

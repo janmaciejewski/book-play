@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// Role enum
+// Rola użytkownika w systemie
 type Role string
 
 const (
@@ -18,7 +18,7 @@ const (
 	RoleAdmin         Role = "ADMIN"
 )
 
-// ReservationStatus enum
+// Status rezerwacji – PENDING, CONFIRMED, CANCELLED, COMPLETED
 type ReservationStatus string
 
 const (
@@ -28,7 +28,7 @@ const (
 	StatusCompleted ReservationStatus = "COMPLETED"
 )
 
-// TeamRole enum
+// Rola w drużynie – kapitan lub członek
 type TeamRole string
 
 const (
@@ -56,7 +56,7 @@ type User struct {
 	CreatedAt         time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt         time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 
-	// Relations
+	// Relacje między modelami
 	Facilities    []Facility     `gorm:"foreignKey:OwnerID" json:"facilities,omitempty"`
 	Reservations  []Reservation  `gorm:"foreignKey:UserID" json:"reservations,omitempty"`
 	Teams         []TeamMember   `gorm:"foreignKey:UserID" json:"teams,omitempty"`

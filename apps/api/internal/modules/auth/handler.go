@@ -18,7 +18,7 @@ func NewHandler(service *Service, mailService *mail.Service) *Handler {
 	return &Handler{service: service, mailService: mailService}
 }
 
-// Register
+// Register – rejestracja nowego użytkownika
 func (h *Handler) Register(c *gin.Context) {
 	var dto RegisterDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
@@ -39,7 +39,7 @@ func (h *Handler) Register(c *gin.Context) {
 	})
 }
 
-// Login
+// Login – logowanie i zwrot tokenów JWT
 func (h *Handler) Login(c *gin.Context) {
 	var dto LoginDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
@@ -59,7 +59,7 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// RefreshToken
+// RefreshToken – odświeżenie pary tokenów
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var dto RefreshTokenDTO
 	if err := c.ShouldBindJSON(&dto); err != nil || dto.RefreshToken == "" {
@@ -78,7 +78,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// Logout
+// Logout – wylogowanie i unieważnienie refresh tokena
 func (h *Handler) Logout(c *gin.Context) {
 	refreshToken, _ := c.Cookie("refresh_token")
 	if refreshToken != "" {
@@ -88,7 +88,7 @@ func (h *Handler) Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out"})
 }
 
-// SendOTP
+// SendOTP – wysyła kod weryfikacyjny na email
 func (h *Handler) SendOTP(c *gin.Context) {
 	var body struct {
 		Email string `json:"email" binding:"required,email"`
@@ -104,7 +104,7 @@ func (h *Handler) SendOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Verification code sent"})
 }
 
-// VerifyOTP
+// VerifyOTP – sprawdza poprawność kodu weryfikacyjnego
 func (h *Handler) VerifyOTP(c *gin.Context) {
 	var body struct {
 		Email string `json:"email" binding:"required,email"`
@@ -126,7 +126,7 @@ func (h *Handler) VerifyOTP(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email verified"})
 }
 
-// ResetPassword sends an OTP and then resets the password after OTP verification
+// ResetPassword – zmienia hasło po weryfikacji kodem OTP
 func (h *Handler) ResetPassword(c *gin.Context) {
 	var body struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -144,7 +144,7 @@ func (h *Handler) ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Hasło zostało zmienione"})
 }
 
-// GetMe
+// GetMe – zwraca dane zalogowanego użytkownika
 func (h *Handler) GetMe(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {

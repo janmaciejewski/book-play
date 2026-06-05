@@ -155,7 +155,7 @@ const handleForgotPassword = async () => {
 
   try {
     if (forgotPasswordStep.value === 'email') {
-      // Step 1: Send OTP
+      // Krok 1: Wysyła kod OTP
       await $fetch('http://localhost:8080/api/v1/auth/send-otp', {
         method: 'POST',
         body: { email: forgotPasswordEmail.value }
@@ -163,7 +163,7 @@ const handleForgotPassword = async () => {
       forgotPasswordMessage.value = 'Kod weryfikacyjny został wysłany na Twój email.'
       forgotPasswordStep.value = 'reset'
     } else {
-      // Step 2: Reset password with OTP
+      // Krok 2: Reset hasła z kodem OTP
       await $fetch('http://localhost:8080/api/v1/auth/reset-password', {
         method: 'POST',
         body: {

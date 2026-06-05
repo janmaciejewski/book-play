@@ -17,7 +17,7 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
-// GetByOwnerID returns all facilities owned by the given user
+// GetByOwnerID – zwraca wszystkie obiekty danego właściciela
 func (s *Service) GetByOwnerID(ownerID uuid.UUID) ([]models.Facility, error) {
 	var facilities []models.Facility
 	if err := s.db.Preload("Slots").Where("owner_id = ?", ownerID).Find(&facilities).Error; err != nil {
@@ -26,7 +26,7 @@ func (s *Service) GetByOwnerID(ownerID uuid.UUID) ([]models.Facility, error) {
 	return facilities, nil
 }
 
-// UpdateByOwner updates a facility, verifying ownership
+// UpdateByOwner – aktualizuje obiekt po weryfikacji właściciela
 func (s *Service) UpdateByOwner(facilityID, ownerID uuid.UUID, updates map[string]interface{}) error {
 	result := s.db.Model(&models.Facility{}).
 		Where("id = ? AND owner_id = ?", facilityID, ownerID).
@@ -37,7 +37,7 @@ func (s *Service) UpdateByOwner(facilityID, ownerID uuid.UUID, updates map[strin
 	return result.Error
 }
 
-// UpdateByAdmin updates any facility without ownership check
+// UpdateByAdmin – aktualizuje dowolny obiekt bez sprawdzania własności
 func (s *Service) UpdateByAdmin(facilityID uuid.UUID, updates map[string]interface{}) error {
 	result := s.db.Model(&models.Facility{}).
 		Where("id = ?", facilityID).
@@ -48,14 +48,14 @@ func (s *Service) UpdateByAdmin(facilityID uuid.UUID, updates map[string]interfa
 	return result.Error
 }
 
-// UpdateSlots replaces all slots for a facility
+// UpdateSlots – zastępuje wszystkie sloty godzinowe obiektu
 func (s *Service) UpdateSlots(facilityID uuid.UUID, slots []models.FacilitySlot) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("facility_id = ?", facilityID).Delete(&models.FacilitySlot{}).Error; err != nil {
 			return err
 		}
 		for i := range slots {
-			slots[i].ID = uuid.Nil // force new ID
+			slots[i].ID = uuid.Nil // wymusza nowe ID dla slotu
 			slots[i].FacilityID = facilityID
 			if err := tx.Create(&slots[i]).Error; err != nil {
 				return err
@@ -65,7 +65,7 @@ func (s *Service) UpdateSlots(facilityID uuid.UUID, slots []models.FacilitySlot)
 	})
 }
 
-// SetClosed closes or reopens a facility
+// SetClosed – zamyka lub otwiera ponownie dany obiekt
 func (s *Service) SetClosed(facilityID, ownerID uuid.UUID, closedUntil *time.Time) error {
 	result := s.db.Model(&models.Facility{}).
 		Where("id = ? AND owner_id = ?", facilityID, ownerID).
@@ -105,7 +105,7 @@ func (s *Service) Create(facility *models.Facility) error {
 	return s.db.Create(facility).Error
 }
 
-// LookupUserByEmail finds a user by email (for admin facility creation)
+// LookupUserByEmail – wyszukuje użytkownika po emailu (dla admina)
 func (s *Service) LookupUserByEmail(email string) (*models.User, error) {
 	var user models.User
 	if err := s.db.Where("email = ?", email).First(&user).Error; err != nil {
@@ -114,18 +114,18 @@ func (s *Service) LookupUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-// GetAvailability returns available time slots for a facility on a given date
+// GetAvailability – zwraca dostępne godziny dla obiektu w podanym dniu
 func (s *Service) GetAvailability(id uuid.UUID, date time.Time) ([]string, error) {
-	// Get facility to check operating hours and closed status
+	// Pobiera obiekt, by sprawdzić godziny otwarcia i status zamknięcia
 	var facility models.Facility
 	if err := s.db.First(&facility, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 
-	// Normalize the requested date (use local timezone to match time.Now())
+	// Normalizuje datę do lokalnej strefy czasowej
 	requestDate := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.Local)
 
-	// Check if facility is closed on the requested date
+	// Sprawdza czy obiekt jest zamknięty w żądanym dniu
 	if facility.ClosedUntil != nil {
 		closedDate := time.Date(facility.ClosedUntil.Year(), facility.ClosedUntil.Month(), facility.ClosedUntil.Day(), 0, 0, 0, 0, facility.ClosedUntil.Location())
 		if !requestDate.After(closedDate) {
@@ -133,38 +133,38 @@ func (s *Service) GetAvailability(id uuid.UUID, date time.Time) ([]string, error
 		}
 	}
 
-	// Get existing reservations for this date
+	// Pobiera istniejące rezerwacje na ten dzień
 	var reservations []models.Reservation
 	if err := s.db.Where("facility_id = ? AND date = ? AND status != ?", id, date, models.StatusCancelled).
 		Find(&reservations).Error; err != nil {
 		return nil, err
 	}
 
-	// Generate all possible hours (8:00 - 22:00)
+	// Generuje wszystkie możliwe godziny (8:00 – 22:00)
 	allHours := []string{}
 	for h := 8; h < 22; h++ {
 		allHours = append(allHours, fmt.Sprintf("%02d:00", h))
 	}
 
-	// Mark booked hours
+	// Oznacza zajęte godziny
 	bookedHours := make(map[string]bool)
 	for _, r := range reservations {
-		startHour := r.StartTime[:5] // Get HH:MM
+		startHour := r.StartTime[:5] // Wyciąga HH:MM
 		bookedHours[startHour] = true
 	}
 
-	// Check if the request is for today
+	// Sprawdza czy zapytanie dotyczy dzisiejszego dnia
 	now := time.Now()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	isToday := requestDate.Equal(today)
 
-	// Return available hours
+	// Zwraca tylko wolne godziny
 	available := []string{}
 	for _, hour := range allHours {
 		if bookedHours[hour] {
 			continue
 		}
-		// For today, filter out past hours
+		// Dla dzisiaj filtruje godziny, które już minęły
 		if isToday {
 			hourInt := 0
 			fmt.Sscanf(hour, "%d:00", &hourInt)

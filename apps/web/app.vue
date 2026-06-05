@@ -9,7 +9,7 @@ useHead({
   titleTemplate: (title) => title ? `${title} | BookPlay` : 'BookPlay',
 })
 
-// Initialize auth state from cookies
+// Inicjalizuje stan autoryzacji z ciasteczek
 const authStore = useAuthStore()
 onMounted(() => {
   authStore.initialize()

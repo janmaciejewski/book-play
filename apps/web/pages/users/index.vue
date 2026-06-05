@@ -87,7 +87,7 @@ definePageMeta({
 
 const authStore = useAuthStore()
 
-// Check if user is admin
+// Sprawdza czy użytkownik jest adminem
 if (authStore.user?.role !== 'ADMIN') {
   navigateTo('/')
 }

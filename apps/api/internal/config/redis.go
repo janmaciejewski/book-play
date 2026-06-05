@@ -16,7 +16,7 @@ func InitRedis(cfg *RedisConfig) (*redis.Client, error) {
 		DB:       cfg.DB,
 	})
 
-	// Test connection
+	// Sprawdza czy połączenie z Redisem działa poprawnie
 	ctx := context.Background()
 	if err := RedisClient.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("failed to connect to Redis: %w", err)

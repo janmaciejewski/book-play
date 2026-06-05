@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// SeedDatabase seeds the database with initial data
+// SeedDatabase wypełnia bazę danych początkowymi danymi testowymi
 func SeedDatabase(db *gorm.DB) error {
-	// Check if already seeded (use a seed marker: admin user with specific ID)
+	// Sprawdza czy dane testowe już istnieją (znacznik: admin z konkretnym ID)
 	var existing models.User
 	if err := db.First(&existing, "id = ?", uuid.MustParse("00000000-0000-0000-0000-000000000001")).Error; err == nil {
 		log.Println("Database already seeded, skipping...")
@@ -22,7 +22,7 @@ func SeedDatabase(db *gorm.DB) error {
 
 	log.Println("Seeding database with initial data...")
 
-	// Create default users
+	// Tworzy domyślnych użytkowników testowych
 	users := []models.User{
 		{
 			ID:           uuid.MustParse("00000000-0000-0000-0000-000000000001"),
@@ -71,7 +71,7 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created %d users", len(users))
 
-	// Create facilities - all near Grodzisk Wielkopolski (52.22762, 16.36534)
+	// Tworzy obiekty – wszystkie w okolicach Grodziska Wielkopolskiego
 	facilities := []models.Facility{
 		{
 			ID:          uuid.MustParse("10000000-0000-0000-0000-000000000001"),
@@ -160,7 +160,7 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created %d facilities", len(facilities))
 
-	// Create facility slots (opening hours for each facility)
+	// Tworzy godziny otwarcia dla każdego obiektu
 	for _, facility := range facilities {
 		slots := []models.FacilitySlot{
 			{FacilityID: facility.ID, DayOfWeek: 0, OpenTime: "08:00", CloseTime: "20:00"}, // Sunday
@@ -179,7 +179,7 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created facility slots for all facilities")
 
-	// Create teams
+	// Tworzy drużyny testowe
 	teams := []models.Team{
 		{
 			ID:          uuid.MustParse("20000000-0000-0000-0000-000000000001"),
@@ -202,7 +202,7 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created %d teams", len(teams))
 
-	// Create team members
+	// Przypisuje członków do drużyn
 	teamMembers := []models.TeamMember{
 		{
 			TeamID: uuid.MustParse("20000000-0000-0000-0000-000000000001"),
@@ -233,7 +233,7 @@ func SeedDatabase(db *gorm.DB) error {
 	}
 	log.Printf("Created %d team members", len(teamMembers))
 
-	// Create reservations
+	// Tworzy przykładowe rezerwacje
 	today := time.Now()
 	tomorrow := today.AddDate(0, 0, 1)
 	nextWeek := today.AddDate(0, 0, 7)
@@ -244,7 +244,7 @@ func SeedDatabase(db *gorm.DB) error {
 	teamID2 := uuid.MustParse("20000000-0000-0000-0000-000000000002")
 
 	reservations := []models.Reservation{
-		// Today's reservations - all owned by captain
+		// Dzisiejsze rezerwacje – wszystkie należą do kapitana
 		{
 			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000001"),
 			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
@@ -268,7 +268,7 @@ func SeedDatabase(db *gorm.DB) error {
 			TotalPrice: decimal.NewFromFloat(80.00),
 			Notes:      strPtr("Mecz koszykówki ze znajomymi"),
 		},
-		// Tomorrow's reservations
+		// Rezerwacje na jutro
 		{
 			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000003"),
 			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000003"),
@@ -292,7 +292,7 @@ func SeedDatabase(db *gorm.DB) error {
 			TotalPrice: decimal.NewFromFloat(80.00),
 			Notes:      strPtr("Turniej siatkówki plażowej"),
 		},
-		// Next week reservations
+		// Rezerwacje na przyszły tydzień
 		{
 			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000005"),
 			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000001"),
@@ -316,7 +316,7 @@ func SeedDatabase(db *gorm.DB) error {
 			TotalPrice: decimal.NewFromFloat(50.00),
 			Notes:      strPtr("Poranny trening pływacki"),
 		},
-		// Completed reservation from past
+		// Zakończona rezerwacja w przeszłości
 		{
 			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000007"),
 			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000002"),
@@ -328,7 +328,7 @@ func SeedDatabase(db *gorm.DB) error {
 			TotalPrice: decimal.NewFromFloat(80.00),
 			Notes:      strPtr("Mecz koszykówki w zeszłym tygodniu"),
 		},
-		// Cancelled reservation
+		// Anulowana rezerwacja
 		{
 			ID:         uuid.MustParse("30000000-0000-0000-0000-000000000008"),
 			FacilityID: uuid.MustParse("10000000-0000-0000-0000-000000000003"),

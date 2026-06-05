@@ -8,7 +8,7 @@ import (
 	"github.com/janmaciejewski/book-play/apps/api/internal/modules/auth"
 )
 
-// JWTAuth middleware validates JWT tokens
+// Middleware JWTAuth sprawdza poprawność tokenu JWT
 func JWTAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -33,7 +33,7 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Set user info in context
+		// Umieszcza dane użytkownika w kontekście zapytania
 		c.Set("userID", claims["sub"])
 		c.Set("email", claims["email"])
 		c.Set("role", claims["role"])

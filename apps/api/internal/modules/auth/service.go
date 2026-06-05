@@ -28,9 +28,9 @@ func NewService(db *gorm.DB) *Service {
 	return &Service{db: db}
 }
 
-// Register creates a new user
+// Register tworzy nowe konto użytkownika z zahaszowanym hasłem
 func (s *Service) Register(dto *RegisterDTO) (*models.User, error) {
-	// Check if user already exists
+	// Sprawdza czy użytkownik już istnieje w bazie
 	var existingUser models.User
 	if err := s.db.Where("email = ?", dto.Email).First(&existingUser).Error; err == nil {
 		return nil, ErrUserAlreadyExists
@@ -38,13 +38,13 @@ func (s *Service) Register(dto *RegisterDTO) (*models.User, error) {
 		return nil, fmt.Errorf("failed to check existing user: %w", err)
 	}
 
-	// Hash password
+	// Hashuje hasło przed zapisaniem
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
-	// Create user
+	// Zapisuje nowego użytkownika w bazie
 	user := &models.User{
 		Email:        dto.Email,
 		PasswordHash: string(hashedPassword),
@@ -65,9 +65,9 @@ func (s *Service) Register(dto *RegisterDTO) (*models.User, error) {
 	return user, nil
 }
 
-// Login authenticates a user and returns tokens
+// Login uwierzytelnia użytkownika i generuje tokeny JWT
 func (s *Service) Login(dto *LoginDTO) (*AuthResponse, error) {
-	// Find user by email
+	// Szuka użytkownika po adresie email
 	var user models.User
 	if err := s.db.Where("email = ?", dto.Email).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -76,47 +76,47 @@ func (s *Service) Login(dto *LoginDTO) (*AuthResponse, error) {
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	// Check if user is active
+	// Sprawdza czy konto jest aktywne
 	if !user.IsActive {
 		return nil, ErrUserInactive
 	}
 
-	// Verify password
+	// Porównuje hasło z zapisanym hashem
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(dto.Password)); err != nil {
 		return nil, ErrInvalidCredentials
 	}
 
-	// Generate tokens
+	// Generuje access + refresh token
 	return s.generateTokens(&user)
 }
 
-// RefreshToken generates new tokens from refresh token
+// RefreshToken wymienia refresh token na nową parę tokenów
 func (s *Service) RefreshToken(tokenString string) (*AuthResponse, error) {
-	// Find refresh token
+	// Wyszukuje ważny refresh token w bazie
 	var refreshToken models.RefreshToken
 	if err := s.db.Where("token = ? AND expires_at > ?", tokenString, time.Now()).
 		Preload("User").First(&refreshToken).Error; err != nil {
 		return nil, ErrInvalidToken
 	}
 
-	// Check if user is active
+	// Sprawdza czy konto użytkownika jest nadal aktywne
 	if !refreshToken.User.IsActive {
 		return nil, ErrUserInactive
 	}
 
-	// Delete old refresh token
+	// Usuwa zużyty refresh token
 	s.db.Delete(&refreshToken)
 
-	// Generate new tokens
+	// Tworzy nową parę tokenów
 	return s.generateTokens(&refreshToken.User)
 }
 
-// Logout invalidates the refresh token
+// Logout unieważnia refresh token użytkownika
 func (s *Service) Logout(tokenString string) error {
 	return s.db.Where("token = ?", tokenString).Delete(&models.RefreshToken{}).Error
 }
 
-// GetUserByID retrieves a user by their ID
+// GetUserByID pobiera użytkownika po jego ID
 func (s *Service) GetUserByID(userID uuid.UUID) (*models.User, error) {
 	var user models.User
 	if err := s.db.First(&user, "id = ?", userID).Error; err != nil {
@@ -125,11 +125,11 @@ func (s *Service) GetUserByID(userID uuid.UUID) (*models.User, error) {
 	return &user, nil
 }
 
-// generateTokens creates access and refresh tokens
+// generateTokens tworzy access token (krótki) i refresh token (długi)
 func (s *Service) generateTokens(user *models.User) (*AuthResponse, error) {
 	cfg := config.AppConfigInstance.JWT
 
-	// Generate access token
+	// Tworzy krótkoterminowy access token JWT
 	accessExpiry := time.Now().Add(cfg.AccessTokenExpiry)
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":   user.ID.String(),
@@ -144,11 +144,11 @@ func (s *Service) generateTokens(user *models.User) (*AuthResponse, error) {
 		return nil, fmt.Errorf("failed to sign access token: %w", err)
 	}
 
-	// Generate refresh token
+	// Tworzy długoterminowy refresh token (UUID)
 	refreshExpiry := time.Now().Add(cfg.RefreshTokenExpiry)
 	refreshTokenString := uuid.New().String()
 
-	// Store refresh token in database
+	// Zapisuje refresh token w bazie do późniejszej walidacji
 	refreshToken := &models.RefreshToken{
 		Token:     refreshTokenString,
 		UserID:    user.ID,
@@ -167,8 +167,7 @@ func (s *Service) generateTokens(user *models.User) (*AuthResponse, error) {
 	}, nil
 }
 
-// ValidateToken validates an access token and returns the claims
-// ResetPasswordWithOTP verifies the OTP and updates the user's password
+// ResetPasswordWithOTP weryfikuje kod OTP i zmienia hasło użytkownika
 func (s *Service) ResetPasswordWithOTP(email, code, newPassword string) error {
 	var otp models.EmailVerificationOTP
 	if err := s.db.Where("email = ? AND code = ? AND expires_at > ?", email, code, time.Now()).First(&otp).Error; err != nil {
@@ -187,7 +186,7 @@ func (s *Service) ResetPasswordWithOTP(email, code, newPassword string) error {
 		return fmt.Errorf("failed to update password: %w", err)
 	}
 
-	// Delete the used OTP
+	// Usuwa wykorzystany kod OTP
 	s.db.Delete(&otp)
 
 	return nil

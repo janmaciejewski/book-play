@@ -59,5 +59,5 @@
 </template>
 
 <script setup lang="ts">
-// Report facility page - no auth required
+// Strona zgłaszania obiektu – nie wymaga logowania
 </script>

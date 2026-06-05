@@ -59,7 +59,7 @@ func (s *Service) SendMessage(teamID, userID, userName, userRole, text string) (
 		return nil, fmt.Errorf("failed to store message: %w", err)
 	}
 
-	// Set 24h TTL on the sorted set (refreshes on each new message)
+	// Ustawia 24h TTL na secie – odświeża się przy każdej wiadomości
 	s.redis.Expire(ctx, chatKey(teamID), 24*time.Hour)
 
 	return msg, nil

@@ -1,6 +1,6 @@
 package auth
 
-// RegisterDTO represents the registration request body
+// RegisterDTO – dane wejściowe dla rejestracji użytkownika
 type RegisterDTO struct {
 	Email     string `json:"email" binding:"required,email"`
 	Password  string `json:"password" binding:"required,min=8,max=72"`
@@ -9,18 +9,18 @@ type RegisterDTO struct {
 	Phone     string `json:"phone" binding:"omitempty"`
 }
 
-// LoginDTO represents the login request body
+// LoginDTO – dane wejściowe dla logowania
 type LoginDTO struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
 
-// RefreshTokenDTO represents the refresh token request body
+// RefreshTokenDTO – dane do odświeżenia pary tokenów
 type RefreshTokenDTO struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-// AuthResponse represents the authentication response
+// AuthResponse – odpowiedź z tokenami po uwierzytelnieniu
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
@@ -28,12 +28,12 @@ type AuthResponse struct {
 	TokenType    string `json:"token_type"`
 }
 
-// ForgotPasswordDTO represents the forgot password request body
+// ForgotPasswordDTO – dane do wysłania kodu resetu hasła
 type ForgotPasswordDTO struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
-// ResetPasswordDTO represents the reset password request body
+// ResetPasswordDTO – dane do zmiany hasła
 type ResetPasswordDTO struct {
 	Token    string `json:"token" binding:"required"`
 	Password string `json:"password" binding:"required,min=8,max=72"`

@@ -235,11 +235,11 @@ const authStore = useAuthStore()
 const route = useRoute()
 const facilityId = route.params.id as string
 
-// Fetch facility
+// Pobiera szczegóły obiektu
 const { data: facilityResponse, pending, error } = await useFetch<FacilityResponse>(`http://localhost:8080/api/v1/facilities/${facilityId}`)
 const facility = computed(() => facilityResponse.value?.data)
 
-// Fetch teams where user is captain
+// Pobiera drużyny, w których użytkownik jest kapitanem
 interface MyTeamResponse { data: Team[] }
 const { data: myTeamsResponse } = await useFetch<MyTeamResponse>('http://localhost:8080/api/v1/my-teams', {
   headers: {
@@ -255,7 +255,7 @@ const teams = computed(() => {
   })
 })
 
-// Booking state
+// Stan formularza rezerwacji
 const selectedDate = ref('')
 const selectedSlot = ref('')
 const duration = ref('1')
@@ -263,13 +263,13 @@ const selectedTeam = ref('')
 const booking = ref(false)
 const bookingError = ref('')
 
-// Min date is today
+// Minimalna data to dzisiaj
 const minDate = computed(() => {
   const today = new Date()
   return today.toISOString().split('T')[0]
 })
 
-// Fetch availability when date changes
+// Pobiera dostępne godziny po zmianie daty
 const availabilityPending = ref(false)
 const availableSlots = ref<string[]>([])
 
@@ -295,7 +295,7 @@ watch(selectedDate, async (newDate) => {
   }
 })
 
-// Check if facility is closed
+// Sprawdza czy obiekt jest zamknięty
 const isFacilityClosed = computed(() => {
   if (!facility.value?.closedUntil) return false
   const closed = new Date(facility.value.closedUntil)
@@ -311,7 +311,7 @@ function formatClosedDate(dateStr: string): string {
   })
 }
 
-// Calculate total price
+// Oblicza całkowitą cenę (stawka × czas trwania)
 const totalPrice = computed(() => {
   const rawRate = facility.value?.hourlyRate || 0
   const rate = typeof rawRate === 'string' ? parseFloat(rawRate) : rawRate
@@ -319,7 +319,7 @@ const totalPrice = computed(() => {
   return (rate * hours).toFixed(2)
 })
 
-// Format date for display
+// Formatuje datę do wyświetlenia po polsku
 const formatDate = (dateStr: string): string => {
   const date = new Date(dateStr)
   return date.toLocaleDateString('pl-PL', {
@@ -330,7 +330,7 @@ const formatDate = (dateStr: string): string => {
   })
 }
 
-// Get type label
+// Zwraca polską nazwę typu obiektu
 const getTypeLabel = (type: string): string => {
   const labels: Record<string, string> = {
     'FOOTBALL': 'Piłka nożna',
@@ -355,7 +355,7 @@ const getTypeBadgeClasses = (type: string): string => {
   return classes[type] || classes.OTHER
 }
 
-// Book reservation
+// Wysyła żądanie utworzenia rezerwacji
 const bookReservation = async () => {
   if (!selectedDate.value || !selectedSlot.value) return
   
@@ -387,7 +387,7 @@ const bookReservation = async () => {
       body
     })
     
-    // Redirect to reservations page
+    // Przekierowuje do listy rezerwacji
     navigateTo('/reservations')
   } catch (err: any) {
     console.error('Failed to book:', err)

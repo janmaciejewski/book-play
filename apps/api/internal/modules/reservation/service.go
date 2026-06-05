@@ -50,7 +50,7 @@ func (s *Service) UpdateStatus(id uuid.UUID, status models.ReservationStatus) er
 	return s.db.Model(&models.Reservation{}).Where("id = ?", id).Update("status", status).Error
 }
 
-// GetByFacilityOwnerID returns all reservations for facilities owned by the given user
+// GetByFacilityOwnerID – zwraca wszystkie rezerwacje dla obiektów danego właściciela
 func (s *Service) GetByFacilityOwnerID(ownerID uuid.UUID) ([]models.Reservation, error) {
 	var facilityIDs []uuid.UUID
 	s.db.Model(&models.Facility{}).Where("owner_id = ?", ownerID).Pluck("id", &facilityIDs)
@@ -72,7 +72,7 @@ func (s *Service) GetByFacilityOwnerID(ownerID uuid.UUID) ([]models.Reservation,
 	return reservations, nil
 }
 
-// UpdateReservationStatus updates status with ownership verification
+// UpdateReservationStatus – aktualizuje status rezerwacji po weryfikacji właściciela obiektu
 func (s *Service) UpdateReservationStatus(reservationID, ownerID uuid.UUID, status models.ReservationStatus) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
 		var reservation models.Reservation
@@ -80,7 +80,7 @@ func (s *Service) UpdateReservationStatus(reservationID, ownerID uuid.UUID, stat
 			return err
 		}
 
-		// Verify the owner owns this facility
+		// Weryfikuje czy użytkownik jest właścicielem tego obiektu
 		var facility models.Facility
 		if err := tx.First(&facility, "id = ? AND owner_id = ?", reservation.FacilityID, ownerID).Error; err != nil {
 			return errors.New("you can only manage reservations for your own facilities")
@@ -135,7 +135,7 @@ func (s *Service) CreateFromDTO(dto *CreateDTO, userID uuid.UUID) (*models.Reser
 	return reservation, nil
 }
 
-// IsUserTeamCaptain checks if the user is a captain of the given team
+// CheckBookingMode – sprawdza czy tryb obiektu pozwala na ten typ rezerwacji
 func (s *Service) CheckBookingMode(facilityID uuid.UUID, isTeamReservation bool) error {
 	var facility struct {
 		BookingMode string
@@ -154,7 +154,7 @@ func (s *Service) CheckBookingMode(facilityID uuid.UUID, isTeamReservation bool)
 			return errors.New("ten obiekt przyjmuje tylko rezerwacje drużynowe")
 		}
 	default:
-		// "BOTH" or empty — allow anything
+		// "BOTH" lub puste – zezwala na wszystko
 	}
 
 	return nil
@@ -171,7 +171,7 @@ func (s *Service) IsUserTeamCaptain(userID, teamID uuid.UUID) (bool, error) {
 }
 
 func parseDate(dateStr string) time.Time {
-	// Simple date parsing - adjust format as needed
+	// Proste parsowanie daty – format ISO 2006-01-02
 	t, _ := time.Parse("2006-01-02", dateStr)
 	return t
 }

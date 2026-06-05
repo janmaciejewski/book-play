@@ -298,7 +298,7 @@ const facilities = computed(() =>
   }),
 )
 
-// Create modal (admin)
+// Modal tworzenia obiektu (admin)
 const showCreateModal = ref(false)
 const creating = ref(false)
 const createForm = reactive({
@@ -345,7 +345,7 @@ async function createFacility() {
   creating.value = false
 }
 
-// Edit modal (facility owner)
+// Modal edycji obiektu (właściciel)
 const editing = ref<Facility | null>(null)
 const saving = ref(false)
 const savingSlots = ref(false)

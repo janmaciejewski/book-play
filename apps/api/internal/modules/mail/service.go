@@ -40,7 +40,7 @@ func (s *Service) VerifyOTP(email, code string) (bool, error) {
 	return true, nil
 }
 
-// encodeSubject encodes a UTF-8 string for use in an email Subject header (RFC 2047)
+// encodeSubject koduje temat wiadomości w UTF-8 zgodnie z RFC 2047
 func encodeSubject(s string) string {
 	return "=?UTF-8?B?" + base64.StdEncoding.EncodeToString([]byte(s)) + "?="
 }
@@ -48,7 +48,7 @@ func encodeSubject(s string) string {
 func (s *Service) SendReservationReminder(reservation *models.Reservation) error {
 	cfg := config.AppConfigInstance.SMTP
 
-	// Format date in Polish
+	// Formatuje datę w języku polskim
 	months := []string{
 		"stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
 		"lipca", "sierpnia", "wrze\xc5\x9bnia", "pa\xc5\xbadziernika", "listopada", "grudnia",
@@ -123,7 +123,7 @@ func (s *Service) SendReservationReminder(reservation *models.Reservation) error
 		return fmt.Errorf("SMTP error: %w", err)
 	}
 
-	// Mark reminder as sent
+	// Oznacza przypomnienie jako wysłane
 	if err := s.db.Model(reservation).Update("reminder_sent", true).Error; err != nil {
 		return fmt.Errorf("failed to mark reminder sent: %w", err)
 	}
@@ -132,7 +132,7 @@ func (s *Service) SendReservationReminder(reservation *models.Reservation) error
 }
 
 func (s *Service) ProcessReminders() error {
-	// Find confirmed reservations happening exactly 3 days from now that haven't had reminders sent
+	// Wyszukuje rezerwacje za 3 dni, dla których jeszcze nie wysłano przypomnienia
 	threeDaysFromNow := time.Now().AddDate(0, 0, 3)
 	startOfDay := time.Date(threeDaysFromNow.Year(), threeDaysFromNow.Month(), threeDaysFromNow.Day(), 0, 0, 0, 0, threeDaysFromNow.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)

@@ -24,9 +24,7 @@ func (s *Service) GetAll() ([]models.Team, error) {
 	return teams, nil
 }
 
-// GetAllPublicOrUserTeams returns teams visible to the given user:
-// - All teams if user is ADMIN
-// - Teams with open recruitment OR teams the user is a member of otherwise
+// GetAllPublicOrUserTeams – zwraca drużyny widoczne dla użytkownika: admin widzi wszystkie, inni tylko otwarte lub swoje
 func (s *Service) GetAllPublicOrUserTeams(userID uuid.UUID, role string) ([]models.Team, error) {
 	if role == "ADMIN" {
 		return s.GetAll()
@@ -91,7 +89,7 @@ func (s *Service) RemoveMember(teamID, memberID, requestorID uuid.UUID) error {
 		if member.Role == models.TeamRoleCaptain {
 			return errors.New("the captain cannot be removed; transfer the captain role first")
 		}
-		// Self-removal (leaving) is always allowed for non-captain
+		// Samodzielne opuszczenie drużyny zawsze dozwolone (poza kapitanem)
 		if member.UserID == requestorID {
 			return tx.Delete(&member).Error
 		}
@@ -139,15 +137,15 @@ func (s *Service) UpdateLogo(teamID uuid.UUID, logoPath string) error {
 
 func (s *Service) DeleteTeam(teamID uuid.UUID) error {
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		// Delete all team members
+		// Usuwa wszystkich członków drużyny
 		if err := tx.Where("team_id = ?", teamID).Delete(&models.TeamMember{}).Error; err != nil {
 			return err
 		}
-		// Delete recruitment applications
+		// Usuwa aplikacje rekrutacyjne
 		if err := tx.Where("team_id = ?", teamID).Delete(&models.TeamRecruitmentApplication{}).Error; err != nil {
 			return err
 		}
-		// Delete the team
+		// Usuwa drużynę
 		if err := tx.Delete(&models.Team{}, "id = ?", teamID).Error; err != nil {
 			return err
 		}
@@ -219,7 +217,7 @@ func (s *Service) GetMyTeams(userID uuid.UUID) ([]models.Team, error) {
 	return teams, nil
 }
 
-// --- Recruitment ---
+// --- Rekrutacja ---
 
 func (s *Service) SetRecruitmentOpen(teamID uuid.UUID, open bool) error {
 	return s.db.Model(&models.Team{}).Where("id = ?", teamID).Update("recruitment_open", open).Error

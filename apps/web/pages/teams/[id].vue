@@ -190,7 +190,7 @@ async function toggleRecruitment(){togglingRecruitment.value=true;try{const ns=!
 async function loadApplications(){showApplications.value=true;try{const r=await fetch(`${apiBase}/teams/${teamId}/applications`,{headers:{Authorization:`Bearer ${useCookie('token').value||''}`}});if(r.ok){const d:{data:Application[]}=await r.json();applications.value=d.data||[]}}catch{}}
 async function handleApplication(appId:string,status:string){try{const r=await fetch(`${apiBase}/teams/${teamId}/applications/${appId}`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${useCookie('token').value||''}`},body:JSON.stringify({status})});if(r.ok){showToast(status==='ACCEPTED'?'Zaakceptowano':'Odrzucono','success');loadApplications();refresh()}else{const e=await r.json();showToast(e.error||'Błąd','error')}}catch{showToast('Błąd połączenia','error')}}
 
-// Chat state
+// Stan czatu – przechowuje wiadomości i status odpytywania
 interface ChatMessage { id:string;teamId:string;userId:string;userName:string;text:string;createdAt:string }
 const chatMessages=ref<ChatMessage[]>([])
 const newMessage=ref('')
@@ -245,7 +245,7 @@ async function fetchChatMessages() {
 
 const isAdminViewing = computed(() => authStore.user?.role === 'ADMIN')
 
-// Start/stop polling based on membership (or admin)
+// Włącza/wyłącza cykliczne pobieranie wiadomości gdy użytkownik ma dostęp
 watch([myMembership, isAdminViewing], ([member, isAdmin]) => {
   if (member || isAdmin) {
     chatIsPolling = true
@@ -277,7 +277,7 @@ async function sendChatMessage() {
     })
     if (r.ok) {
       newMessage.value = ''
-      // Force immediate fetch after send
+      // Natychmiast pobiera aktualne wiadomości po wysłaniu
       const fr = await fetch(`${apiBase}/teams/${teamId}/chat`, {
         headers: { Authorization: `Bearer ${useCookie('token').value}` }
       })

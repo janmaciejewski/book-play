@@ -102,7 +102,6 @@ func main() {
 		}
 
 		v1.GET("/facilities", facilityHandler.GetAll)
-		// Must be registered before /facilities/:id to avoid "mine" being captured as :id
 		v1.GET("/facilities/mine", middleware.JWTAuth(), func(c *gin.Context) {
 			facilityHandler.GetMine(c)
 		})
@@ -148,7 +147,7 @@ func main() {
 			protected.POST("/users/:id/avatar", userHandler.UploadAvatar)
 			protected.DELETE("/users/:id", userHandler.Delete)
 
-			// Chat routes (only if Redis is available)
+			// Endpointy czatu – tylko jeśli Redis jest dostępny
 			if chatHandler != nil {
 				protected.GET("/teams/:id/chat", chatHandler.GetMessages)
 				protected.POST("/teams/:id/chat", chatHandler.SendMessage)
@@ -162,10 +161,10 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	// Start the reminder scheduler as a background goroutine
+	// Uruchamia scheduler przypomnień w tle
 	go func() {
 		log.Println("📧 Reservation reminder scheduler started (checking every hour)")
-		// Run immediately on startup for testing
+		// Uruchamia od razu przy starcie dla testów
 		log.Println("Running initial reminder check...")
 		if err := mailService.ProcessReminders(); err != nil {
 			log.Printf("Warning: Initial reminder check failed: %v", err)

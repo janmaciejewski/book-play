@@ -17,13 +17,6 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// GetAll godoc
-// @Summary Get all reservations
-// @Description Get list of all reservations
-// @Tags reservations
-// @Security BearerAuth
-// @Success 200 {object} map[string]interface{}
-// @Router /reservations [get]
 func (h *Handler) GetAll(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -31,14 +24,14 @@ func (h *Handler) GetAll(c *gin.Context) {
 		return
 	}
 
-	// Parse userID from string to uuid.UUID
+	// Konwertuje ID użytkownika z stringa na UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
 		return
 	}
 
-	// Check if user is admin
+	// Sprawdza czy użytkownik jest adminem
 	userRole, _ := c.Get("role")
 	isAdmin := userRole == models.RoleAdmin || userRole == string(models.RoleAdmin)
 
@@ -46,10 +39,10 @@ func (h *Handler) GetAll(c *gin.Context) {
 
 	var reservations []models.Reservation
 	if isAdmin {
-		// Admins see all reservations
+		// Admin widzi wszystkie rezerwacje
 		reservations, err = h.service.GetAll()
 	} else {
-		// Users see their own reservations
+		// Zwykły użytkownik widzi tylko swoje rezerwacje
 		reservations, err = h.service.GetByUserID(userID)
 	}
 
@@ -61,15 +54,6 @@ func (h *Handler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": reservations})
 }
 
-// GetByID godoc
-// @Summary Get reservation by ID
-// @Description Get single reservation details
-// @Tags reservations
-// @Security BearerAuth
-// @Param id path string true "Reservation ID"
-// @Success 200 {object} map[string]interface{}
-// @Failure 404 {object} map[string]string
-// @Router /reservations/{id} [get]
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -86,18 +70,8 @@ func (h *Handler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": reservation})
 }
 
-// Create godoc
-// @Summary Create a new reservation
-// @Description Create a new reservation
-// @Tags reservations
-// @Security BearerAuth
-// @Param request body CreateDTO true "Reservation data"
-// @Success 201 {object} map[string]interface{}
-// @Router /reservations [post]
 func (h *Handler) Create(c *gin.Context) {
 	userIDStr, _ := c.Get("userID")
-
-	// Parse userID from string to uuid.UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid user ID"})
@@ -110,7 +84,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// Check facility booking mode
+	// Sprawdza tryb rezerwacji obiektu (indywidualny/drużynowy)
 	facilityID, err := uuid.Parse(dto.FacilityID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid facility ID"})
@@ -122,7 +96,7 @@ func (h *Handler) Create(c *gin.Context) {
 		return
 	}
 
-	// If team_id is provided, verify user is the team captain
+	// Jeśli podano team_id, weryfikuje czy użytkownik jest kapitanem drużyny
 	if dto.TeamID != nil && *dto.TeamID != "" {
 		teamID, err := uuid.Parse(*dto.TeamID)
 		if err != nil {
@@ -149,14 +123,6 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": reservation})
 }
 
-// Cancel godoc
-// @Summary Cancel a reservation
-// @Description Cancel a reservation (only by owner)
-// @Tags reservations
-// @Security BearerAuth
-// @Param id path string true "Reservation ID"
-// @Success 200 {object} map[string]interface{}
-// @Router /reservations/{id}/cancel [put]
 func (h *Handler) Cancel(c *gin.Context) {
 	userIDStr, _ := c.Get("userID")
 	userID, err := uuid.Parse(userIDStr.(string))
@@ -171,26 +137,26 @@ func (h *Handler) Cancel(c *gin.Context) {
 		return
 	}
 
-	// Get reservation to check ownership
+	// Pobiera rezerwację, aby sprawdzić własność
 	reservation, err := h.service.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Reservation not found"})
 		return
 	}
 
-	// Check if user owns the reservation
+	// Sprawdza czy użytkownik jest właścicielem rezerwacji
 	if reservation.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You can only cancel your own reservations"})
 		return
 	}
 
-	// Check if already cancelled
+	// Sprawdza czy rezerwacja jest już anulowana
 	if reservation.Status == models.StatusCancelled {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Reservation is already cancelled"})
 		return
 	}
 
-	// Cancel the reservation
+	// Anuluje rezerwację
 	if err := h.service.UpdateStatus(id, models.StatusCancelled); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to cancel reservation"})
 		return
@@ -199,8 +165,7 @@ func (h *Handler) Cancel(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Reservation cancelled successfully"})
 }
 
-// GetForFacilityOwner returns reservations for facilities owned by the authenticated user,
-// or all reservations if the user is ADMIN
+// GetForFacilityOwner – zwraca rezerwacje dla obiektów zalogowanego właściciela (lub wszystkie dla admina)
 func (h *Handler) GetForFacilityOwner(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
@@ -232,7 +197,7 @@ func (h *Handler) GetForFacilityOwner(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": reservations})
 }
 
-// UpdateStatus allows facility owner to confirm or decline a pending reservation
+// UpdateStatus – pozwala właścicielowi obiektu potwierdzić lub odrzucić oczekującą rezerwację
 func (h *Handler) UpdateStatus(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {

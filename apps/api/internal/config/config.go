@@ -68,7 +68,7 @@ type MinioConfig struct {
 var AppConfigInstance *Config
 
 func Load() (*Config, error) {
-	// Load .env file from project root (always the single source of truth)
+	// Ładuje plik .env z głównego katalogu projektu
 	if err := godotenv.Load(".env"); err != nil {
 		fmt.Println("Warning: No .env file found at project root, using environment variables and defaults")
 	} else {
@@ -119,7 +119,7 @@ func Load() (*Config, error) {
 		},
 	}
 
-	// Set default database URL if not provided
+	// Ustawia domyślny URL bazy danych, jeśli nie podano
 	if cfg.Database.URL == "" {
 		cfg.Database.URL = fmt.Sprintf(
 			"postgresql://%s:%s@%s:%s/%s?sslmode=%s",
@@ -132,7 +132,7 @@ func Load() (*Config, error) {
 		)
 	}
 
-	// Set default Redis URL if not provided
+	// Ustawia domyślny URL Redis, jeśli nie podano
 	if cfg.Redis.URL == "" {
 		cfg.Redis.URL = fmt.Sprintf("redis://%s:%s/%d", cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.DB)
 	}

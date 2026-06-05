@@ -78,7 +78,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 		return
 	}
 
-	// Visibility check: admin sees all, others need open recruitment or membership
+	// Kontrola widoczności: admin widzi wszystko, inni potrzebują otwartej rekrutacji lub członkostwa
 	role, _ := c.Get("role")
 	if role != nil && role.(string) == "ADMIN" {
 		c.JSON(http.StatusOK, gin.H{"data": team})
@@ -282,7 +282,7 @@ func (h *Handler) UpdateMemberRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": team})
 }
 
-// --- Recruitment ---
+// --- Rekrutacja ---
 func (h *Handler) ToggleRecruitment(c *gin.Context) {
 	userID, _ := h.getUserID(c)
 	teamID, _ := uuid.Parse(c.Param("id"))
