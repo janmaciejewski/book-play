@@ -19,47 +19,24 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Szukaj</label>
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Szukaj obiektów..."
-              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
-            />
+          <input v-model="search" type="text" placeholder="Szukaj obiektów..." class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-400 shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Typ</label>
-            <select
-              v-model="typeFilter"
-              class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2"
-            >
+          <select v-model="typeFilter" class="w-full rounded-md bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 px-3 py-2">
             <option value="">Wszystkie typy</option>
-            <option value="FOOTBALL">Piłka nożna</option>
-            <option value="BASKETBALL">Koszykówka</option>
-            <option value="TENNIS">Tenis</option>
-            <option value="VOLLEYBALL">Siatkówka</option>
-            <option value="SWIMMING">Pływanie</option>
-            <option value="OTHER">Inne</option>
+            <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
         </div>
         <div class="flex items-end">
-          <button
-            @click="searchFacilities"
-            class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors"
-          >
-            Szukaj
-          </button>
+          <button @click="searchFacilities" class="w-full bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 transition-colors">Szukaj</button>
         </div>
       </div>
     </div>
 
     <!-- Facilities Grid -->
-    <div v-if="pending" class="flex justify-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-    </div>
-
-    <div v-else-if="error" class="bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300 p-4 rounded-lg border border-red-200 dark:border-red-800">
-      Nie udało się załadować obiektów. Spróbuj ponownie.
-    </div>
+    <AppLoading v-if="pending" />
+    <AppError v-else-if="error" message="Nie udało się załadować obiektów. Spróbuj ponownie." />
 
     <div v-else-if="facilities.length === 0" class="text-center py-12">
       <p class="text-gray-500 dark:text-gray-400">Nie znaleziono obiektów. Spróbuj dostosować kryteria wyszukiwania.</p>
@@ -79,28 +56,17 @@
             :alt="facility.name"
             class="w-full h-full object-cover"
           />
-          <img
-            v-else
-            :src="getTypeImage(facility.type)"
-            :alt="facility.name"
-            class="w-full h-full object-cover"
-          />
+          <img v-else :src="getTypeImage(facility.type)" :alt="facility.name" class="w-full h-full object-cover" />
         </div>
         <div class="p-4">
           <div class="flex items-center justify-between mb-2">
-            <span :class="getTypeBadgeClasses(facility.type)" class="text-xs font-medium px-2 py-1 rounded border">
-              {{ getTypeName(facility.type) }}
-            </span>
+            <FacilityTypeBadge :type="facility.type" />
             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ facility.hourlyRate }} PLN/h</span>
           </div>
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ facility.name }}</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ facility.address }}, {{ facility.city }}</p>
           <div v-if="facility.amenities && facility.amenities.length > 0" class="flex flex-wrap gap-1">
-            <span
-              v-for="amenity in facility.amenities.slice(0, 3)"
-              :key="amenity"
-              class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded"
-            >
+            <span v-for="amenity in facility.amenities.slice(0, 3)" :key="amenity" class="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded">
               {{ amenity }}
             </span>
             <span v-if="facility.amenities.length > 3" class="text-xs text-gray-400 dark:text-gray-500">
@@ -114,9 +80,8 @@
 </template>
 
 <script setup lang="ts">
-// Przeglądanie obiektów nie wymaga logowania
-
 const authStore = useAuthStore()
+const { getTypeImage, typeOptions } = useFacilityTypes()
 const search = ref('')
 const typeFilter = ref('')
 const cityFilter = ref('')
@@ -133,11 +98,8 @@ interface Facility {
   images?: string[]
 }
 
-interface FacilitiesResponse {
-  data: Facility[]
-}
+interface FacilitiesResponse { data: Facility[] }
 
-// Buduje URL z parametrami filtrowania
 const apiUrl = computed(() => {
   const params = new URLSearchParams()
   if (typeFilter.value) params.append('type', typeFilter.value)
@@ -155,52 +117,9 @@ const facilities = computed(() => {
   return raw.filter(f => f.name.toLowerCase().includes(q))
 })
 
-const getTypeImage = (type: string): string => {
-  const images: Record<string, string> = {
-    FOOTBALL: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&h=600&fit=crop',
-    BASKETBALL: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=800&h=600&fit=crop',
-    TENNIS: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&h=600&fit=crop',
-    VOLLEYBALL: 'https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=800&h=600&fit=crop',
-    SWIMMING: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?w=800&h=600&fit=crop',
-    OTHER: 'https://images.unsplash.com/photo-1770064319607-f869d94d4ec3?w=800&h=600&fit=crop'
-  }
-  return images[type] || 'https://images.unsplash.com/photo-1770064319607-f869d94d4ec3?w=800&h=600&fit=crop'
-}
+const searchFacilities = () => refresh()
 
-const getTypeName = (type: string): string => {
-  const names: Record<string, string> = {
-    FOOTBALL: 'Piłka nożna',
-    BASKETBALL: 'Koszykówka',
-    TENNIS: 'Tenis',
-    VOLLEYBALL: 'Siatkówka',
-    SWIMMING: 'Pływanie',
-    OTHER: 'Inne'
-  }
-  return names[type] || type
-}
+watch([typeFilter, cityFilter], () => refresh())
 
-const getTypeBadgeClasses = (type: string): string => {
-  const classes: Record<string, string> = {
-    FOOTBALL: 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700/50',
-    BASKETBALL: 'text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700/50',
-    TENNIS: 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700/50',
-    VOLLEYBALL: 'text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700/50',
-    SWIMMING: 'text-cyan-700 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-700/50',
-    OTHER: 'text-gray-700 dark:text-gray-400 bg-gray-100 dark:bg-gray-700/30 border-gray-200 dark:border-gray-600/50'
-  }
-  return classes[type] || classes.OTHER
-}
-
-const searchFacilities = () => {
-  refresh()
-}
-
-// Reaguje na zmiany filtrów – odświeża listę
-watch([typeFilter, cityFilter], () => {
-  refresh()
-})
-
-const viewFacility = (id: string) => {
-  navigateTo(`/facilities/${id}`)
-}
+const viewFacility = (id: string) => navigateTo(`/facilities/${id}`)
 </script>

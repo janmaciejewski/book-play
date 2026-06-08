@@ -1,7 +1,6 @@
 package reservation
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -34,8 +33,6 @@ func (h *Handler) GetAll(c *gin.Context) {
 	// Sprawdza czy użytkownik jest adminem
 	userRole, _ := c.Get("role")
 	isAdmin := userRole == models.RoleAdmin || userRole == string(models.RoleAdmin)
-
-	log.Printf("GetAll reservations - userID: %s, role: %v, isAdmin: %v", userID, userRole, isAdmin)
 
 	var reservations []models.Reservation
 	if isAdmin {

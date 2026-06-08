@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/janmaciejewski/book-play/apps/api/internal/config"
@@ -32,9 +31,15 @@ func main() {
 	defer config.CloseDatabase()
 
 	if err := db.AutoMigrate(
-		&models.User{}, &models.RefreshToken{}, &models.Facility{}, &models.FacilitySlot{},
-		&models.Reservation{}, &models.Team{}, &models.TeamMember{},
-		&models.TeamRecruitmentApplication{}, &models.EmailVerificationOTP{},
+		&models.User{},
+		&models.RefreshToken{},
+		&models.Facility{},
+		&models.FacilitySlot{},
+		&models.Reservation{},
+		&models.Team{},
+		&models.TeamMember{},
+		&models.TeamRecruitmentApplication{},
+		&models.EmailVerificationOTP{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -161,23 +166,23 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	// Uruchamia scheduler przypomnień w tle
-	go func() {
-		log.Println("📧 Reservation reminder scheduler started (checking every hour)")
-		// Uruchamia od razu przy starcie dla testów
-		log.Println("Running initial reminder check...")
-		if err := mailService.ProcessReminders(); err != nil {
-			log.Printf("Warning: Initial reminder check failed: %v", err)
-		}
-		ticker := time.NewTicker(1 * time.Hour)
-		defer ticker.Stop()
-		for range ticker.C {
-			log.Println("Running scheduled reminder check...")
-			if err := mailService.ProcessReminders(); err != nil {
-				log.Printf("Warning: Reminder check failed: %v", err)
-			}
-		}
-	}()
+	// Uruchamia scheduler przypomnień w tle (wyłączony)
+	// go func() {
+	// 	log.Println("📧 Reservation reminder scheduler started (checking every hour)")
+	// 	// Uruchamia od razu przy starcie dla testów
+	// 	log.Println("Running initial reminder check...")
+	// 	if err := mailService.ProcessReminders(); err != nil {
+	// 		log.Printf("Warning: Initial reminder check failed: %v", err)
+	// 	}
+	// 	ticker := time.NewTicker(1 * time.Hour)
+	// 	defer ticker.Stop()
+	// 	for range ticker.C {
+	// 		log.Println("Running scheduled reminder check...")
+	// 		if err := mailService.ProcessReminders(); err != nil {
+	// 			log.Printf("Warning: Reminder check failed: %v", err)
+	// 		}
+	// 	}
+	// }()
 
 	fmt.Printf("Server starting on port %s...\n", port)
 	if err := router.Run(":" + port); err != nil {

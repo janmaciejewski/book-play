@@ -55,7 +55,15 @@ func (h *Handler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login"})
 		return
 	}
-	c.SetCookie("refresh_token", response.RefreshToken, int(config.AppConfigInstance.JWT.RefreshTokenExpiry.Seconds()), "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    response.RefreshToken,
+		Path:     "/",
+		MaxAge:   int(config.AppConfigInstance.JWT.RefreshTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	c.JSON(http.StatusOK, response)
 }
 
@@ -74,7 +82,15 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	c.SetCookie("refresh_token", response.RefreshToken, int(config.AppConfigInstance.JWT.RefreshTokenExpiry.Seconds()), "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    response.RefreshToken,
+		Path:     "/",
+		MaxAge:   int(config.AppConfigInstance.JWT.RefreshTokenExpiry.Seconds()),
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	c.JSON(http.StatusOK, response)
 }
 
@@ -84,7 +100,15 @@ func (h *Handler) Logout(c *gin.Context) {
 	if refreshToken != "" {
 		h.service.Logout(refreshToken)
 	}
-	c.SetCookie("refresh_token", "", -1, "/", "", false, true)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out"})
 }
 
